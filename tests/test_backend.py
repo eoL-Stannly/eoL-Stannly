@@ -1,5 +1,5 @@
 """
-Tests for the Web3 backend API
+Tests for the Solana backend API
 """
 import pytest
 from fastapi.testclient import TestClient
@@ -25,7 +25,7 @@ class TestBalanceEndpoint:
     """Tests for the balance endpoint"""
 
     def test_invalid_address_returns_400(self):
-        """Test that invalid addresses return 400 error"""
+        """Test that invalid Solana addresses return 400 error"""
         # TODO: Implement when backend is running
         # client = TestClient(app)
         # response = client.get("/balance/invalid-address")
@@ -33,6 +33,25 @@ class TestBalanceEndpoint:
         pass
 
     def test_valid_address_returns_balance(self):
-        """Test that valid addresses return balance info"""
-        # TODO: Implement with mock Web3 provider
+        """Test that valid Solana addresses return balance info"""
+        # TODO: Implement with mock Solana client
+        # Valid Solana address example: "11111111111111111111111111111111"
+        pass
+
+
+class TestSlotEndpoint:
+    """Tests for the slot endpoint"""
+
+    def test_latest_slot_returns_info(self):
+        """Test that latest slot endpoint returns slot info"""
+        # TODO: Implement when backend is running
+        pass
+
+
+class TestTokenEndpoint:
+    """Tests for the token accounts endpoint"""
+
+    def test_get_token_accounts(self):
+        """Test that token accounts endpoint returns SPL tokens"""
+        # TODO: Implement when backend is running
         pass

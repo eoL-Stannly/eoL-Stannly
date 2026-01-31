@@ -34,10 +34,11 @@ htmlcov/
 .pytest_cache/
 .nyc_output/
 
-# Hardhat/Smart Contracts
-cache/
-artifacts/
-typechain-types/
+# Anchor/Solana
+target/
+.anchor/
+test-ledger/
+*.so
 
 # Logs
 logs/

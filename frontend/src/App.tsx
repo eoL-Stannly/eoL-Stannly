@@ -1,43 +1,65 @@
-import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi'
+import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { useEffect, useState } from 'react'
 
 function App() {
-  const { address, isConnected } = useAccount()
-  const { connectors, connect } = useConnect()
-  const { disconnect } = useDisconnect()
-  const { data: balance } = useBalance({ address })
+  const { connection } = useConnection()
+  const { publicKey, connected } = useWallet()
+  const [balance, setBalance] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (publicKey && connected) {
+      setLoading(true)
+      connection
+        .getBalance(publicKey)
+        .then((bal) => {
+          setBalance(bal / LAMPORTS_PER_SOL)
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false))
+    } else {
+      setBalance(null)
+    }
+  }, [publicKey, connected, connection])
 
   return (
     <div className="app">
       <header>
-        <h1>Web3 App</h1>
+        <h1>Solana Web3 App</h1>
       </header>
 
       <main>
-        {isConnected ? (
+        <div className="wallet-section">
+          <WalletMultiButton />
+        </div>
+
+        {connected && publicKey && (
           <div className="wallet-info">
-            <p>Connected: {address}</p>
-            {balance && (
-              <p>Balance: {balance.formatted} {balance.symbol}</p>
-            )}
-            <button onClick={() => disconnect()}>Disconnect</button>
+            <p>
+              <strong>Address:</strong>
+            </p>
+            <p className="address">{publicKey.toBase58()}</p>
+            <p>
+              <strong>Balance:</strong>{' '}
+              {loading ? 'Loading...' : balance !== null ? `${balance.toFixed(4)} SOL` : 'N/A'}
+            </p>
           </div>
-        ) : (
-          <div className="connect-options">
-            <h2>Connect Wallet</h2>
-            {connectors.map((connector) => (
-              <button
-                key={connector.uid}
-                onClick={() => connect({ connector })}
-              >
-                {connector.name}
-              </button>
-            ))}
+        )}
+
+        {!connected && (
+          <div className="connect-prompt">
+            <p>Connect your Solana wallet to get started</p>
+            <p className="supported-wallets">
+              Supported: Phantom, Solflare, Torus, Ledger
+            </p>
           </div>
         )}
       </main>
 
       <footer>
-        <p>Built with React, TypeScript, and wagmi</p>
+        <p>Built with React, TypeScript, and Solana Wallet Adapter</p>
       </footer>
     </div>
   )

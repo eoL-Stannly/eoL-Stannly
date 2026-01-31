@@ -1,0 +1,26 @@
+{
+  "name": "solana-web3-app",
+  "version": "0.1.0",
+  "description": "Full-stack Solana Web3 application",
+  "scripts": {
+    "build": "anchor build",
+    "test": "anchor test",
+    "deploy:local": "anchor deploy --provider.cluster localnet",
+    "deploy:devnet": "anchor deploy --provider.cluster devnet",
+    "validator": "solana-test-validator"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.87.0",
+    "@solana/spl-token": "^0.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.0",
+    "ts-mocha": "^10.0.0",
+    "chai": "^4.3.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.0"
+  }
+}

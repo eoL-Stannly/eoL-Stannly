@@ -1,7 +1,7 @@
 {
-  "name": "web3-frontend",
+  "name": "solana-web3-frontend",
   "version": "0.1.0",
-  "description": "Web3 application frontend",
+  "description": "Solana Web3 application frontend",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -11,12 +11,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "ethers": "^6.9.0",
+    "@solana/web3.js": "^1.87.0",
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/wallet-adapter-react-ui": "^0.9.35",
+    "@solana/wallet-adapter-wallets": "^0.19.27",
+    "@solana/spl-token": "^0.3.9",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "wagmi": "^2.0.0",
-    "viem": "^2.0.0",
-    "@tanstack/react-query": "^5.0.0"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
@@ -26,6 +28,7 @@
     "vite": "^5.0.0",
     "eslint": "^8.55.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
-    "@typescript-eslint/parser": "^6.13.0"
+    "@typescript-eslint/parser": "^6.13.0",
+    "vite-plugin-node-polyfills": "^0.17.0"
   }
 }

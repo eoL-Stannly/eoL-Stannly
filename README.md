@@ -1,43 +1,66 @@
-# Web3
+# Solana Web3 App
 
-A full-stack Web3 application with Python backend, TypeScript/React frontend, and Solidity smart contracts.
+A full-stack Solana Web3 application with Python backend, TypeScript/React frontend, and Anchor/Rust programs.
 
 ## Project Structure
 
 ```
-Web3/
-├── backend/           # Python FastAPI backend
-│   ├── main.py        # API server with Web3 integration
-│   └── requirements.txt
-├── frontend/          # React + TypeScript frontend
+solana-web3-app/
+├── backend/              # Python FastAPI backend
+│   ├── main.py           # API server with Solana integration
+│   └── requirements.txt  # Python dependencies
+├── frontend/             # React + TypeScript frontend
 │   ├── src/
-│   │   ├── App.tsx    # Main app with wallet connection
-│   │   ├── wagmi.ts   # Wagmi configuration
-│   │   └── ...
+│   │   ├── App.tsx       # Wallet connection UI
+│   │   ├── main.tsx      # Solana wallet providers
+│   │   └── index.css     # Styling
 │   └── package.json
-├── contracts/         # Solidity smart contracts
-│   ├── ExampleToken.sol
-│   ├── hardhat.config.ts
-│   └── package.json
-├── scripts/           # Deployment scripts
+├── programs/             # Anchor/Rust programs
+│   └── example_token/
+│       ├── src/lib.rs    # SPL Token program
+│       └── Cargo.toml
+├── scripts/              # Deployment scripts
 │   └── deploy.ts
-└── tests/             # Test files
+├── tests/                # Test files
+│   ├── test_backend.py   # Python API tests
+│   └── example_token.ts  # Anchor program tests
+├── Anchor.toml           # Anchor configuration
+├── Cargo.toml            # Rust workspace
+└── package.json          # Node dependencies
 ```
 
 ## Features
 
-- **Wallet Connection**: Connect with MetaMask, WalletConnect, and other wallets
-- **Balance Display**: View ETH balance for connected wallet
-- **Smart Contracts**: ERC20 token example with deployment scripts
-- **Python API**: FastAPI backend with Web3.py integration
+- **Wallet Connection**: Connect with Phantom, Solflare, Torus, Ledger
+- **Balance Display**: View SOL balance for connected wallet
+- **SPL Tokens**: View token accounts and balances
+- **Anchor Programs**: Example token program with mint, transfer, burn
+- **Python API**: FastAPI backend with solana-py integration
 
-## Getting Started
-
-### Prerequisites
+## Prerequisites
 
 - Node.js >= 18
 - Python >= 3.10
-- npm or yarn
+- Rust >= 1.70
+- Solana CLI >= 1.17
+- Anchor CLI >= 0.29
+
+### Install Solana & Anchor
+
+```bash
+# Install Solana CLI
+sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
+
+# Install Anchor CLI
+cargo install --git https://github.com/coral-xyz/anchor avm --locked
+avm install latest
+avm use latest
+
+# Generate a new keypair (if needed)
+solana-keygen new
+```
+
+## Getting Started
 
 ### Backend Setup
 
@@ -49,7 +72,6 @@ pip install -r requirements.txt
 
 # Copy environment variables
 cp ../.env.example .env
-# Edit .env with your RPC URL
 
 # Run the server
 uvicorn main:app --reload
@@ -63,26 +85,41 @@ npm install
 
 # Copy environment variables
 cp ../.env.example .env.local
-# Edit .env.local with your WalletConnect project ID
 
 # Run development server
 npm run dev
 ```
 
-### Smart Contracts Setup
+### Program Development
 
 ```bash
-cd contracts
+# Install dependencies
 npm install
 
-# Compile contracts
-npm run compile
+# Start local validator
+solana-test-validator
 
-# Run local node
-npm run node
+# Build programs
+anchor build
 
-# Deploy to local network (in another terminal)
-npm run deploy:local
+# Deploy to localnet
+anchor deploy --provider.cluster localnet
+
+# Run tests
+anchor test
+```
+
+### Deploy to Devnet
+
+```bash
+# Configure for devnet
+solana config set --url devnet
+
+# Airdrop SOL for deployment
+solana airdrop 2
+
+# Deploy
+anchor deploy --provider.cluster devnet
 ```
 
 ## Environment Variables
@@ -91,17 +128,33 @@ Create a `.env` file based on `.env.example`:
 
 | Variable | Description |
 |----------|-------------|
-| `RPC_URL` | Ethereum RPC endpoint (Alchemy, Infura, etc.) |
-| `VITE_WALLETCONNECT_PROJECT_ID` | WalletConnect Cloud project ID |
-| `PRIVATE_KEY` | Private key for contract deployment |
-| `ETHERSCAN_API_KEY` | Etherscan API key for verification |
+| `SOLANA_RPC_URL` | Solana RPC endpoint for backend |
+| `VITE_SOLANA_NETWORK` | Network: devnet, testnet, or mainnet-beta |
+| `VITE_SOLANA_RPC_URL` | Optional custom RPC for frontend |
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | Health check with Solana version |
+| `GET /balance/{address}` | Get SOL balance |
+| `GET /slot/latest` | Get latest slot info |
+| `GET /account/{address}` | Get account details |
+| `GET /tokens/{address}` | Get SPL token accounts |
 
 ## Tech Stack
 
-- **Frontend**: React, TypeScript, Vite, wagmi, viem
-- **Backend**: Python, FastAPI, Web3.py
-- **Smart Contracts**: Solidity, Hardhat, OpenZeppelin
-- **Testing**: Pytest, Hardhat Test
+- **Frontend**: React, TypeScript, Vite, Solana Wallet Adapter
+- **Backend**: Python, FastAPI, solana-py, solders
+- **Programs**: Rust, Anchor, SPL Token
+- **Testing**: Pytest, Mocha/Chai
+
+## Resources
+
+- [Solana Docs](https://docs.solana.com/)
+- [Anchor Book](https://book.anchor-lang.com/)
+- [Solana Wallet Adapter](https://github.com/solana-labs/wallet-adapter)
+- [solana-py](https://github.com/michaelhly/solana-py)
 
 ## License
 
