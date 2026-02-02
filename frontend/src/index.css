@@ -1,12 +1,32 @@
+/* ============================================
+   HACKER TERMINAL THEME
+   Black background, green accents
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #111111;
+  --green-primary: #00ff00;
+  --green-dim: #00cc00;
+  --green-dark: #009900;
+  --green-glow: rgba(0, 255, 0, 0.15);
+  --red-primary: #ff3333;
+  --red-dim: #cc2222;
+  --text-primary: #00ff00;
+  --text-secondary: #00cc00;
+  --text-dim: #006600;
+  --border-color: #1a1a1a;
+  --border-glow: #003300;
+
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
-
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,11 +41,31 @@
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: var(--bg-primary);
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* Scanline effect */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0px,
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  z-index: 9999;
+  opacity: 0.3;
 }
 
 .app {
@@ -34,22 +74,29 @@ body {
   padding: 1.5rem;
 }
 
-/* Header */
+/* ============================================
+   HEADER
+   ============================================ */
+
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 header h1 {
-  font-size: 1.75rem;
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--green-primary);
+  text-shadow: 0 0 10px var(--green-glow);
+}
+
+header h1::before {
+  content: '> ';
+  color: var(--green-dim);
 }
 
 .wallet-header {
@@ -58,7 +105,26 @@ header h1 {
   gap: 1rem;
 }
 
-/* Wallet Badge */
+/* Override Solana wallet adapter button */
+.wallet-adapter-button {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--green-dark) !important;
+  color: var(--green-primary) !important;
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.wallet-adapter-button:hover {
+  background: var(--bg-secondary) !important;
+  border-color: var(--green-primary) !important;
+  box-shadow: 0 0 15px var(--green-glow) !important;
+}
+
+/* ============================================
+   WALLET INFO
+   ============================================ */
+
 .wallet-info {
   margin-bottom: 1.5rem;
 }
@@ -68,66 +134,88 @@ header h1 {
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 1rem;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 50px;
-  font-size: 0.875rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--green-dark);
+  font-size: 0.8rem;
 }
 
 .wallet-label {
-  color: #10B981;
-  font-weight: 500;
+  color: var(--green-primary);
+}
+
+.wallet-label::before {
+  content: '● ';
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 .wallet-address {
-  color: #94a3b8;
-  font-family: monospace;
+  color: var(--green-dim);
 }
 
 .wallet-balance {
-  color: #f1f5f9;
+  color: var(--green-primary);
   font-weight: 600;
 }
 
-/* Main Content */
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+
 main {
   padding: 0;
   background: transparent;
-  border: none;
 }
 
-/* Connect Prompt */
 .connect-prompt {
   text-align: center;
-  padding: 2rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  padding: 3rem 2rem;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
   margin-top: 2rem;
 }
 
 .connect-prompt p {
-  color: #94a3b8;
+  color: var(--text-dim);
   margin: 0.5rem 0;
 }
 
-.supported-wallets {
-  font-size: 0.875rem;
-  color: #64748b !important;
+.connect-prompt p::before {
+  content: '// ';
 }
 
-/* Footer */
-footer {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  text-align: center;
-  color: #64748b;
-  font-size: 0.875rem;
+.supported-wallets {
+  font-size: 0.75rem;
+  color: var(--text-dim) !important;
 }
 
 /* ============================================
-   PRICE DASHBOARD STYLES
+   FOOTER
+   ============================================ */
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+footer p::before {
+  content: '/* ';
+}
+
+footer p::after {
+  content: ' */';
+}
+
+/* ============================================
+   PRICE DASHBOARD
    ============================================ */
 
 .price-dashboard {
@@ -136,95 +224,143 @@ footer {
 
 .dashboard-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-left {
+  display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
 }
 
 .dashboard-header h2 {
-  font-size: 1.5rem;
-  color: #f1f5f9;
+  font-size: 1.25rem;
+  color: var(--green-primary);
+  font-weight: 600;
   margin: 0;
 }
 
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--green-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--green-primary);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 8px var(--green-primary);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
 .powered-by {
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 0.7rem;
+  color: var(--text-dim);
 }
 
 .powered-by a {
-  color: #10B981;
+  color: var(--green-dim);
   text-decoration: none;
 }
 
 .powered-by a:hover {
+  color: var(--green-primary);
   text-decoration: underline;
 }
 
 .last-update {
-  margin-left: auto;
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 0.7rem;
+  color: var(--text-dim);
 }
 
-/* Crypto Selector Pills */
+/* ============================================
+   CRYPTO SELECTOR PILLS
+   ============================================ */
+
 .crypto-selector {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .crypto-pill {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.875rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 2px solid transparent;
-  border-radius: 50px;
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.8rem;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  font-size: 0.75rem;
 }
 
 .crypto-pill:hover {
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--green-dark);
+  background: var(--bg-tertiary);
 }
 
 .crypto-pill.active {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.pill-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  border-color: var(--green-primary);
+  background: var(--bg-tertiary);
+  box-shadow: 0 0 10px var(--green-glow), inset 0 0 10px var(--green-glow);
 }
 
 .pill-symbol {
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--green-primary);
 }
 
 .pill-price {
-  color: #94a3b8;
-  font-family: monospace;
+  color: var(--green-dim);
 }
 
-/* Main Chart Section */
+/* ============================================
+   MAIN CHART SECTION
+   ============================================ */
+
 .main-chart-section {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.8) 100%);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   padding: 1.5rem;
   margin-bottom: 2rem;
+  position: relative;
 }
 
-/* Price Chart Container */
+.main-chart-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green-dark), transparent);
+}
+
+/* ============================================
+   PRICE CHART
+   ============================================ */
+
 .price-chart-container {
   width: 100%;
 }
@@ -243,27 +379,25 @@ footer {
 }
 
 .crypto-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  color: white;
-  font-size: 1.25rem;
+  font-size: 0.9rem;
+  color: var(--green-primary);
+  font-weight: 600;
+}
+
+.terminal-bracket {
+  color: var(--green-dim);
 }
 
 .crypto-details h3 {
-  font-size: 1.25rem;
-  color: #f1f5f9;
+  font-size: 1.1rem;
+  color: var(--green-primary);
   margin: 0;
   line-height: 1.2;
 }
 
 .crypto-details .symbol {
-  font-size: 0.875rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: var(--text-dim);
 }
 
 .price-value {
@@ -272,204 +406,228 @@ footer {
 
 .current-price {
   display: block;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #f1f5f9;
-  font-family: monospace;
+  color: var(--green-primary);
+  text-shadow: 0 0 20px var(--green-glow);
 }
 
 .price-change {
-  font-size: 0.875rem;
+  display: inline-block;
+  font-size: 0.8rem;
   font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .price-change.positive {
-  color: #10B981;
-  background: rgba(16, 185, 129, 0.1);
+  color: var(--green-primary);
+  background: var(--green-glow);
 }
 
 .price-change.negative {
-  color: #EF4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--red-primary);
+  background: rgba(255, 51, 51, 0.1);
 }
 
 .chart-wrapper {
-  margin: 1rem 0;
+  margin: 1.5rem 0;
 }
 
 /* Chart Tooltip */
 .chart-tooltip {
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  background: var(--bg-primary);
+  border: 1px solid var(--green-dark);
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 0 15px var(--green-glow);
 }
 
 .tooltip-price {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--green-primary);
   margin: 0;
-  font-family: monospace;
 }
 
 .tooltip-time {
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 0.65rem;
+  color: var(--text-dim);
   margin: 0.25rem 0 0;
 }
 
-/* Time Range Selector */
+/* ============================================
+   TIME RANGE SELECTOR
+   ============================================ */
+
 .time-range-selector {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   margin-top: 1rem;
-  flex-wrap: wrap;
 }
 
 .time-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #94a3b8;
-  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .time-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #f1f5f9;
+  border-color: var(--green-dark);
+  color: var(--green-dim);
   transform: none;
   box-shadow: none;
 }
 
 .time-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #f1f5f9;
+  background: var(--green-glow);
+  border-color: var(--green-primary);
+  color: var(--green-primary);
 }
 
-/* Price Grid */
+/* ============================================
+   PRICE GRID
+   ============================================ */
+
 .price-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
 }
 
 .price-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   padding: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .price-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--green-dark);
 }
 
 .price-card.selected {
-  background: rgba(16, 185, 129, 0.05);
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: var(--green-primary);
+  box-shadow: 0 0 15px var(--green-glow);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
-.card-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  color: white;
-  font-size: 0.75rem;
+.card-symbol {
+  color: var(--green-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
-.card-name strong {
-  display: block;
-  color: #f1f5f9;
-  font-size: 0.875rem;
-}
-
-.card-name span {
+.card-name {
+  color: var(--text-dim);
   font-size: 0.7rem;
-  color: #64748b;
 }
 
 .card-price {
-  font-size: 1.125rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #f1f5f9;
-  font-family: monospace;
+  color: var(--green-primary);
   margin-bottom: 0.25rem;
 }
 
 .card-confidence {
-  font-size: 0.7rem;
-  color: #64748b;
+  font-size: 0.65rem;
+  color: var(--text-dim);
 }
 
-/* Loading State */
+/* ============================================
+   LOADING STATE
+   ============================================ */
+
 .dashboard-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 4rem 2rem;
-  color: #94a3b8;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(16, 185, 129, 0.1);
-  border-top-color: #10B981;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+.terminal-loader {
+  text-align: left;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.terminal-line {
+  display: block;
+  color: var(--green-dim);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
 }
 
-/* Error State */
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ============================================
+   ERROR STATE
+   ============================================ */
+
 .dashboard-error {
-  text-align: center;
   padding: 3rem 2rem;
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 12px;
 }
 
-.dashboard-error p {
-  color: #EF4444;
-  margin-bottom: 1rem;
+.error-terminal {
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-.dashboard-error button {
-  background: #EF4444;
-  padding: 0.5rem 1.5rem;
+.error-line {
+  display: block;
+  color: var(--red-primary);
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
 }
 
-/* Responsive */
+.retry-btn {
+  margin-top: 1.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--green-dark);
+  color: var(--green-dim);
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.retry-btn:hover:not(:disabled) {
+  border-color: var(--green-primary);
+  color: var(--green-primary);
+  box-shadow: 0 0 10px var(--green-glow);
+}
+
+.retry-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
 @media (max-width: 768px) {
   .app {
     padding: 1rem;
@@ -482,20 +640,30 @@ footer {
   }
 
   header h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .dashboard-header {
     flex-direction: column;
+    gap: 0.75rem;
     align-items: flex-start;
   }
 
-  .last-update {
-    margin-left: 0;
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .crypto-selector {
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.75rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .crypto-pill {
+    flex-shrink: 0;
   }
 
   .price-chart-header {
@@ -507,13 +675,12 @@ footer {
     text-align: left;
   }
 
-  .time-range-selector {
-    gap: 0.25rem;
+  .current-price {
+    font-size: 1.5rem;
   }
 
-  .time-btn {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.75rem;
+  .time-range-selector {
+    flex-wrap: wrap;
   }
 
   .price-grid {
@@ -527,7 +694,11 @@ footer {
   }
 
   .crypto-pill {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.75rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .main-chart-section {
+    padding: 1rem;
   }
 }

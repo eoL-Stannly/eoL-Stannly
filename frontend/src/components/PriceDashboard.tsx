@@ -11,12 +11,12 @@ import {
 type TimeRange = '24h' | '1m' | '6m' | '1y' | '2y' | 'all';
 
 const TIME_RANGES: { label: string; value: TimeRange }[] = [
-  { label: '24 Hours', value: '24h' },
-  { label: '1 Month', value: '1m' },
-  { label: '6 Months', value: '6m' },
-  { label: '1 Year', value: '1y' },
-  { label: '2 Years', value: '2y' },
-  { label: 'All', value: 'all' },
+  { label: '24H', value: '24h' },
+  { label: '1M', value: '1m' },
+  { label: '6M', value: '6m' },
+  { label: '1Y', value: '1y' },
+  { label: '2Y', value: '2y' },
+  { label: 'ALL', value: 'all' },
 ];
 
 export function PriceDashboard() {
@@ -26,25 +26,27 @@ export function PriceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   const loadPrices = useCallback(async () => {
     try {
       setError(null);
+      setRetrying(true);
       const allPrices = await fetchAllPrices();
       setPrices(allPrices);
       setLastUpdate(new Date());
     } catch (err) {
-      setError('Failed to fetch prices. Please try again.');
+      setError('CONNECTION_FAILED: Unable to fetch price data from Pyth Network');
       console.error(err);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
   }, []);
 
   useEffect(() => {
     loadPrices();
 
-    // Set up real-time updates
     const symbols = Object.keys(PRICE_FEEDS) as CryptoSymbol[];
     const unsubscribe = subscribeToPrices(symbols, (updatedPrices) => {
       setPrices((current) => {
@@ -60,7 +62,6 @@ export function PriceDashboard() {
       setLastUpdate(new Date());
     });
 
-    // Refresh prices every 30 seconds as fallback
     const interval = setInterval(loadPrices, 30000);
 
     return () => {
@@ -84,17 +85,24 @@ export function PriceDashboard() {
   if (loading) {
     return (
       <div className="dashboard-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading prices from Pyth Network...</p>
+        <div className="terminal-loader">
+          <span className="terminal-line">&gt; Connecting to Pyth Network...</span>
+          <span className="terminal-line">&gt; Fetching price feeds<span className="blink">_</span></span>
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && prices.length === 0) {
     return (
       <div className="dashboard-error">
-        <p>{error}</p>
-        <button onClick={loadPrices}>Retry</button>
+        <div className="error-terminal">
+          <span className="error-line">&gt; ERROR: {error}</span>
+          <span className="error-line">&gt; Status: DISCONNECTED</span>
+          <button className="retry-btn" onClick={loadPrices} disabled={retrying}>
+            {retrying ? '> Retrying...' : '> Retry connection'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -102,36 +110,36 @@ export function PriceDashboard() {
   return (
     <div className="price-dashboard">
       <div className="dashboard-header">
-        <h2>Crypto Prices</h2>
-        <p className="powered-by">
-          Powered by{' '}
-          <a href="https://pyth.network" target="_blank" rel="noopener noreferrer">
-            Pyth Network
-          </a>
-        </p>
-        {lastUpdate && (
-          <span className="last-update">
-            Last update: {lastUpdate.toLocaleTimeString()}
+        <div className="header-left">
+          <h2>&gt; PRICE_FEED</h2>
+          <span className="status-indicator">
+            <span className="status-dot"></span>
+            LIVE
           </span>
-        )}
+        </div>
+        <div className="header-right">
+          <span className="powered-by">
+            src:{' '}
+            <a href="https://pyth.network" target="_blank" rel="noopener noreferrer">
+              pyth.network
+            </a>
+          </span>
+          {lastUpdate && (
+            <span className="last-update">
+              {lastUpdate.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Crypto Selector Pills */}
+      {/* Crypto Selector */}
       <div className="crypto-selector">
         {prices.map((price) => (
           <button
             key={price.symbol}
             className={`crypto-pill ${selectedCrypto === price.symbol ? 'active' : ''}`}
             onClick={() => setSelectedCrypto(price.symbol)}
-            style={{
-              borderColor:
-                selectedCrypto === price.symbol ? price.color : 'transparent',
-            }}
           >
-            <span
-              className="pill-dot"
-              style={{ backgroundColor: price.color }}
-            ></span>
             <span className="pill-symbol">{price.symbol}</span>
             <span className="pill-price">{formatPrice(price.price)}</span>
           </button>
@@ -143,7 +151,6 @@ export function PriceDashboard() {
         <div className="main-chart-section">
           <PriceChart priceData={selectedPrice} timeRange={timeRange} />
 
-          {/* Time Range Selector */}
           <div className="time-range-selector">
             {TIME_RANGES.map((range) => (
               <button
@@ -167,20 +174,12 @@ export function PriceDashboard() {
             onClick={() => setSelectedCrypto(price.symbol)}
           >
             <div className="card-header">
-              <div
-                className="card-icon"
-                style={{ backgroundColor: price.color }}
-              >
-                {price.symbol.slice(0, 1)}
-              </div>
-              <div className="card-name">
-                <strong>{price.symbol}</strong>
-                <span>{price.name}</span>
-              </div>
+              <span className="card-symbol">[{price.symbol}]</span>
+              <span className="card-name">{price.name}</span>
             </div>
             <div className="card-price">{formatPrice(price.price)}</div>
             <div className="card-confidence">
-              ±{formatPrice(price.confidence)}
+              conf: ±{formatPrice(price.confidence)}
             </div>
           </div>
         ))}

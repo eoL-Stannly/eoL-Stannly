@@ -31,8 +31,6 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
   const [history, setHistory] = useState<PriceHistoryPoint[]>([]);
 
   useEffect(() => {
-    // Generate mock history based on current price
-    // In production, fetch from a historical data API
     const points = TIME_RANGE_POINTS[timeRange];
     const volatility = timeRange === '24h' ? 0.01 : 0.03;
     setHistory(generateMockHistory(priceData.price, points, volatility));
@@ -73,8 +71,10 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
     <div className="price-chart-container">
       <div className="price-chart-header">
         <div className="price-info">
-          <div className="crypto-icon" style={{ backgroundColor: priceData.color }}>
-            {priceData.symbol.slice(0, 1)}
+          <div className="crypto-icon">
+            <span className="terminal-bracket">[</span>
+            {priceData.symbol}
+            <span className="terminal-bracket">]</span>
           </div>
           <div className="crypto-details">
             <h3>{priceData.name}</h3>
@@ -91,7 +91,7 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
       </div>
 
       <div className="chart-wrapper">
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={220}>
           <AreaChart
             data={history}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -100,17 +100,17 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="0%"
-                  stopColor={isPositive ? '#10B981' : '#EF4444'}
-                  stopOpacity={0.6}
+                  stopColor={isPositive ? '#00ff00' : '#ff3333'}
+                  stopOpacity={0.4}
                 />
                 <stop
                   offset="50%"
-                  stopColor={isPositive ? '#10B981' : '#EF4444'}
-                  stopOpacity={0.2}
+                  stopColor={isPositive ? '#00ff00' : '#ff3333'}
+                  stopOpacity={0.1}
                 />
                 <stop
                   offset="100%"
-                  stopColor={isPositive ? '#10B981' : '#EF4444'}
+                  stopColor={isPositive ? '#00ff00' : '#ff3333'}
                   stopOpacity={0}
                 />
               </linearGradient>
@@ -118,9 +118,9 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
             <XAxis
               dataKey="timestamp"
               tickFormatter={formatTime}
-              stroke="#6B7280"
-              tick={{ fill: '#9CA3AF', fontSize: 11 }}
-              axisLine={{ stroke: '#374151' }}
+              stroke="#1a1a1a"
+              tick={{ fill: '#00ff00', fontSize: 10, fontFamily: 'monospace' }}
+              axisLine={{ stroke: '#1a1a1a' }}
               tickLine={false}
               interval="preserveStartEnd"
               minTickGap={50}
@@ -128,11 +128,11 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
             <YAxis
               domain={['auto', 'auto']}
               tickFormatter={(v) => formatPrice(v)}
-              stroke="#6B7280"
-              tick={{ fill: '#9CA3AF', fontSize: 11 }}
+              stroke="#1a1a1a"
+              tick={{ fill: '#00ff00', fontSize: 10, fontFamily: 'monospace' }}
               axisLine={false}
               tickLine={false}
-              width={70}
+              width={75}
             />
             <Tooltip
               content={({ active, payload }) => {
@@ -153,10 +153,10 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
             <Area
               type="monotone"
               dataKey="price"
-              stroke={isPositive ? '#10B981' : '#EF4444'}
+              stroke={isPositive ? '#00ff00' : '#ff3333'}
               strokeWidth={2}
               fill={`url(#${gradientId})`}
-              animationDuration={1000}
+              animationDuration={800}
             />
           </AreaChart>
         </ResponsiveContainer>

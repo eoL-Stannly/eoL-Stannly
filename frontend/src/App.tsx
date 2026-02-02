@@ -28,7 +28,7 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h1>Solana Web3 App</h1>
+        <h1>SOLANA_TERMINAL</h1>
         <div className="wallet-header">
           <WalletMultiButton />
         </div>
@@ -38,30 +38,29 @@ function App() {
         {connected && publicKey && (
           <div className="wallet-info">
             <div className="wallet-badge">
-              <span className="wallet-label">Connected</span>
+              <span className="wallet-label">CONNECTED</span>
               <span className="wallet-address">{publicKey.toBase58().slice(0, 4)}...{publicKey.toBase58().slice(-4)}</span>
               <span className="wallet-balance">
-                {loading ? '...' : balance !== null ? `${balance.toFixed(2)} SOL` : '0 SOL'}
+                {loading ? '...' : balance !== null ? `${balance.toFixed(4)} SOL` : '0 SOL'}
               </span>
             </div>
           </div>
         )}
 
-        {/* Price Dashboard */}
         <PriceDashboard />
 
         {!connected && (
           <div className="connect-prompt">
-            <p>Connect your Solana wallet to view your balance</p>
+            <p>Connect wallet to access full functionality</p>
             <p className="supported-wallets">
-              Supported: Phantom, Solflare, Torus, Ledger
+              phantom | solflare | ledger
             </p>
           </div>
         )}
       </main>
 
       <footer>
-        <p>Built with React, TypeScript, Solana & Pyth Network</p>
+        <p>solana // pyth network // react</p>
       </footer>
     </div>
   )
