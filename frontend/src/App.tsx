@@ -2,6 +2,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { useEffect, useState } from 'react'
+import { PriceDashboard } from './components/PriceDashboard'
 
 function App() {
   const { connection } = useConnection()
@@ -28,29 +29,30 @@ function App() {
     <div className="app">
       <header>
         <h1>Solana Web3 App</h1>
+        <div className="wallet-header">
+          <WalletMultiButton />
+        </div>
       </header>
 
       <main>
-        <div className="wallet-section">
-          <WalletMultiButton />
-        </div>
-
         {connected && publicKey && (
           <div className="wallet-info">
-            <p>
-              <strong>Address:</strong>
-            </p>
-            <p className="address">{publicKey.toBase58()}</p>
-            <p>
-              <strong>Balance:</strong>{' '}
-              {loading ? 'Loading...' : balance !== null ? `${balance.toFixed(4)} SOL` : 'N/A'}
-            </p>
+            <div className="wallet-badge">
+              <span className="wallet-label">Connected</span>
+              <span className="wallet-address">{publicKey.toBase58().slice(0, 4)}...{publicKey.toBase58().slice(-4)}</span>
+              <span className="wallet-balance">
+                {loading ? '...' : balance !== null ? `${balance.toFixed(2)} SOL` : '0 SOL'}
+              </span>
+            </div>
           </div>
         )}
 
+        {/* Price Dashboard */}
+        <PriceDashboard />
+
         {!connected && (
           <div className="connect-prompt">
-            <p>Connect your Solana wallet to get started</p>
+            <p>Connect your Solana wallet to view your balance</p>
             <p className="supported-wallets">
               Supported: Phantom, Solflare, Torus, Ledger
             </p>
@@ -59,7 +61,7 @@ function App() {
       </main>
 
       <footer>
-        <p>Built with React, TypeScript, and Solana Wallet Adapter</p>
+        <p>Built with React, TypeScript, Solana & Pyth Network</p>
       </footer>
     </div>
   )
