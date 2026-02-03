@@ -8,21 +8,30 @@ import {
   subscribeToPrices,
 } from '../services/pythService';
 
-type TimeRange = '24h' | '1m' | '6m' | '1y' | '2y' | 'all';
+type TimeRange = '1s' | '5s' | '10s' | '15s' | '30s' | '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '12h' | '1d' | '1w' | '1mo';
 
 const TIME_RANGES: { label: string; value: TimeRange }[] = [
-  { label: '24H', value: '24h' },
+  { label: '1S', value: '1s' },
+  { label: '5S', value: '5s' },
+  { label: '10S', value: '10s' },
+  { label: '15S', value: '15s' },
+  { label: '30S', value: '30s' },
   { label: '1M', value: '1m' },
-  { label: '6M', value: '6m' },
-  { label: '1Y', value: '1y' },
-  { label: '2Y', value: '2y' },
-  { label: 'ALL', value: 'all' },
+  { label: '5M', value: '5m' },
+  { label: '15M', value: '15m' },
+  { label: '30M', value: '30m' },
+  { label: '1H', value: '1h' },
+  { label: '4H', value: '4h' },
+  { label: '12H', value: '12h' },
+  { label: '1D', value: '1d' },
+  { label: '1W', value: '1w' },
+  { label: '1MO', value: '1mo' },
 ];
 
 export function PriceDashboard() {
   const [prices, setPrices] = useState<PriceData[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<CryptoSymbol>('SOL');
-  const [timeRange, setTimeRange] = useState<TimeRange>('1y');
+  const [timeRange, setTimeRange] = useState<TimeRange>('1d');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);

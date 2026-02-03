@@ -3,54 +3,60 @@ import { HermesClient } from '@pythnetwork/hermes-client';
 // Pyth Hermes public endpoint
 const HERMES_ENDPOINT = 'https://hermes.pyth.network';
 
-// Top 10 cryptocurrency price feed IDs (by volume)
-// IMPORTANT: IDs must have 0x prefix for the API
-// Source: https://pyth.network/developers/price-feed-ids
+// Price feeds configuration
+// Pyth feeds have actual feed IDs, custom tokens use 'mock' as ID
 export const PRICE_FEEDS = {
   SOL: {
     id: '0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d',
     name: 'Solana',
     symbol: 'SOL',
+    isMock: false,
   },
   BTC: {
     id: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
     name: 'Bitcoin',
     symbol: 'BTC',
+    isMock: false,
   },
   ETH: {
     id: '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace',
     name: 'Ethereum',
     symbol: 'ETH',
+    isMock: false,
   },
-  BNB: {
-    id: '0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f',
-    name: 'BNB',
-    symbol: 'BNB',
+  PENGUIN: {
+    id: 'mock',
+    name: 'Penguin',
+    symbol: 'PENGUIN',
+    isMock: true,
+    mintAddress: '8Jx8AAHj86wbQgUTjGuj6GTTL5Ps3cqxKRTvpaJApump',
+    basePrice: 0.00042,
   },
-  XRP: {
-    id: '0xec5d399846a9209f3fe5881d70aae9268c94339ff9817e8d18ff19fa05eea1c8',
-    name: 'XRP',
-    symbol: 'XRP',
-  },
-  ADA: {
-    id: '0x2a01deaec9e51a579277b34b122399984d0bbf57e2458a7e42fecd2829867a0d',
-    name: 'Cardano',
-    symbol: 'ADA',
+  K2: {
+    id: 'mock',
+    name: 'K2',
+    symbol: 'K2',
+    isMock: true,
+    mintAddress: '8aZEym6Uv5vuy2LQ9BYNSiSiiKS3JKJEhbiUgpQppump',
+    basePrice: 0.00018,
   },
   DOGE: {
     id: '0xdcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c',
     name: 'Dogecoin',
     symbol: 'DOGE',
-  },
-  AVAX: {
-    id: '0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7',
-    name: 'Avalanche',
-    symbol: 'AVAX',
+    isMock: false,
   },
   PEPE: {
     id: '0xd69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4',
     name: 'Pepe',
     symbol: 'PEPE',
+    isMock: false,
+  },
+  AVAX: {
+    id: '0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7',
+    name: 'Avalanche',
+    symbol: 'AVAX',
+    isMock: false,
   },
 } as const;
 
@@ -63,6 +69,7 @@ export interface PriceData {
   confidence: number;
   timestamp: number;
   change24h?: number;
+  isMock?: boolean;
 }
 
 export interface PriceHistoryPoint {
@@ -72,6 +79,51 @@ export interface PriceHistoryPoint {
 
 // Create Hermes client instance
 const hermesClient = new HermesClient(HERMES_ENDPOINT);
+
+// Store for mock token prices (simulates live price movement)
+const mockPriceStore: Record<string, { price: number; lastUpdate: number }> = {};
+
+// Generate simulated price for mock tokens
+function getMockPrice(symbol: CryptoSymbol): PriceData {
+  const feed = PRICE_FEEDS[symbol];
+  if (!('basePrice' in feed)) {
+    throw new Error(`${symbol} is not a mock token`);
+  }
+
+  const now = Date.now();
+  const stored = mockPriceStore[symbol];
+
+  let price: number;
+  if (stored && now - stored.lastUpdate < 1000) {
+    // Use cached price if less than 1 second old
+    price = stored.price;
+  } else {
+    // Generate new price with small random movement
+    const basePrice = feed.basePrice;
+    const variance = basePrice * 0.15; // 15% variance
+    const randomFactor = (Math.random() - 0.5) * 2;
+
+    if (stored) {
+      // Small incremental change from last price
+      const change = stored.price * (Math.random() - 0.5) * 0.02;
+      price = Math.max(stored.price + change, basePrice * 0.5);
+      price = Math.min(price, basePrice * 1.5);
+    } else {
+      price = basePrice + randomFactor * variance;
+    }
+
+    mockPriceStore[symbol] = { price, lastUpdate: now };
+  }
+
+  return {
+    symbol,
+    name: feed.name,
+    price,
+    confidence: price * 0.001,
+    timestamp: now,
+    isMock: true,
+  };
+}
 
 // Parse Pyth price data
 function parsePythPrice(priceData: {
@@ -87,7 +139,21 @@ function parsePythPrice(priceData: {
 
 // Fetch latest prices for all feeds using HermesClient
 export async function fetchAllPrices(): Promise<PriceData[]> {
-  const feedIds = Object.values(PRICE_FEEDS).map((feed) => feed.id);
+  // Separate Pyth feeds from mock feeds
+  const pythFeeds = Object.entries(PRICE_FEEDS).filter(([, feed]) => !feed.isMock);
+  const mockFeeds = Object.entries(PRICE_FEEDS).filter(([, feed]) => feed.isMock);
+
+  const feedIds = pythFeeds.map(([, feed]) => feed.id);
+  const prices: PriceData[] = [];
+
+  // Get mock prices first (always available)
+  for (const [symbol] of mockFeeds) {
+    try {
+      prices.push(getMockPrice(symbol as CryptoSymbol));
+    } catch (e) {
+      console.error(`Error generating mock price for ${symbol}:`, e);
+    }
+  }
 
   try {
     const priceUpdates = await hermesClient.getLatestPriceUpdates(feedIds);
@@ -96,12 +162,10 @@ export async function fetchAllPrices(): Promise<PriceData[]> {
       throw new Error('Invalid response format from Pyth');
     }
 
-    const prices: PriceData[] = [];
-
     for (const update of priceUpdates.parsed) {
       // The response ID doesn't have 0x prefix, so we need to match without it
       const responseId = update.id.toLowerCase();
-      const feedEntry = Object.entries(PRICE_FEEDS).find(
+      const feedEntry = pythFeeds.find(
         ([, feed]) => feed.id.toLowerCase().replace('0x', '') === responseId
       );
 
@@ -127,18 +191,21 @@ export async function fetchAllPrices(): Promise<PriceData[]> {
   } catch (error) {
     console.error('Error fetching all prices from Pyth, trying individual feeds:', error);
     // Fallback: fetch prices individually for resilience
-    return fetchPricesIndividually();
+    const pythPrices = await fetchPricesIndividually();
+    return [...prices, ...pythPrices].sort((a, b) => {
+      const order = Object.keys(PRICE_FEEDS);
+      return order.indexOf(a.symbol) - order.indexOf(b.symbol);
+    });
   }
 }
 
 // Fallback function to fetch prices one by one
 async function fetchPricesIndividually(): Promise<PriceData[]> {
   const prices: PriceData[] = [];
-  const symbols = Object.keys(PRICE_FEEDS) as CryptoSymbol[];
+  const pythFeeds = Object.entries(PRICE_FEEDS).filter(([, feed]) => !feed.isMock);
 
   const results = await Promise.allSettled(
-    symbols.map(async (symbol) => {
-      const feed = PRICE_FEEDS[symbol];
+    pythFeeds.map(async ([symbol, feed]) => {
       const priceUpdates = await hermesClient.getLatestPriceUpdates([feed.id]);
 
       if (!priceUpdates?.parsed?.[0]?.price) {
@@ -149,7 +216,7 @@ async function fetchPricesIndividually(): Promise<PriceData[]> {
       const { price, confidence, timestamp } = parsePythPrice(update.price);
 
       return {
-        symbol,
+        symbol: symbol as CryptoSymbol,
         name: feed.name,
         price,
         confidence,
@@ -238,11 +305,35 @@ export function subscribeToPrices(
   symbols: CryptoSymbol[],
   onUpdate: (prices: PriceData[]) => void
 ): () => void {
-  const feedIds = symbols.map((s) => PRICE_FEEDS[s].id);
+  // Separate Pyth feeds from mock feeds
+  const pythSymbols = symbols.filter((s) => !PRICE_FEEDS[s].isMock);
+  const mockSymbols = symbols.filter((s) => PRICE_FEEDS[s].isMock);
+
+  const feedIds = pythSymbols.map((s) => PRICE_FEEDS[s].id);
   let eventSource: EventSource | null = null;
   let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  let mockInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Update mock prices periodically
+  if (mockSymbols.length > 0) {
+    mockInterval = setInterval(() => {
+      const mockPrices: PriceData[] = [];
+      for (const symbol of mockSymbols) {
+        try {
+          mockPrices.push(getMockPrice(symbol));
+        } catch (e) {
+          console.error(`Error getting mock price for ${symbol}:`, e);
+        }
+      }
+      if (mockPrices.length > 0) {
+        onUpdate(mockPrices);
+      }
+    }, 2000); // Update mock prices every 2 seconds
+  }
 
   const connect = () => {
+    if (feedIds.length === 0) return;
+
     // Use the correct URL format with 0x prefix IDs
     const idsParam = feedIds.map((id) => `ids[]=${id}`).join('&');
     const url = `${HERMES_ENDPOINT}/v2/updates/price/stream?${idsParam}`;
@@ -259,7 +350,7 @@ export function subscribeToPrices(
             for (const update of data.parsed) {
               const responseId = update.id.toLowerCase();
               const feedEntry = Object.entries(PRICE_FEEDS).find(
-                ([, feed]) => feed.id.toLowerCase().replace('0x', '') === responseId
+                ([, feed]) => !feed.isMock && feed.id.toLowerCase().replace('0x', '') === responseId
               );
 
               if (feedEntry && update.price) {
@@ -301,6 +392,9 @@ export function subscribeToPrices(
     eventSource?.close();
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
+    }
+    if (mockInterval) {
+      clearInterval(mockInterval);
     }
   };
 }

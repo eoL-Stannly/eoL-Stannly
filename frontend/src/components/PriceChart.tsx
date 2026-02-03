@@ -15,25 +15,36 @@ import {
 
 interface PriceChartProps {
   priceData: PriceData;
-  timeRange: '24h' | '1m' | '6m' | '1y' | '2y' | 'all';
+  timeRange: '1s' | '5s' | '10s' | '15s' | '30s' | '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '12h' | '1d' | '1w' | '1mo';
 }
 
-const TIME_RANGE_POINTS: Record<string, number> = {
-  '24h': 24,
-  '1m': 30,
-  '6m': 60,
-  '1y': 52,
-  '2y': 104,
-  all: 200,
+const TIME_RANGE_CONFIG: Record<string, { points: number; intervalMs: number }> = {
+  '1s': { points: 60, intervalMs: 1000 },
+  '5s': { points: 60, intervalMs: 5000 },
+  '10s': { points: 60, intervalMs: 10000 },
+  '15s': { points: 60, intervalMs: 15000 },
+  '30s': { points: 60, intervalMs: 30000 },
+  '1m': { points: 60, intervalMs: 60000 },
+  '5m': { points: 60, intervalMs: 5 * 60000 },
+  '15m': { points: 60, intervalMs: 15 * 60000 },
+  '30m': { points: 60, intervalMs: 30 * 60000 },
+  '1h': { points: 60, intervalMs: 60 * 60000 },
+  '4h': { points: 48, intervalMs: 4 * 60 * 60000 },
+  '12h': { points: 48, intervalMs: 12 * 60 * 60000 },
+  '1d': { points: 48, intervalMs: 24 * 60 * 60000 },
+  '1w': { points: 52, intervalMs: 7 * 24 * 60 * 60000 },
+  '1mo': { points: 30, intervalMs: 30 * 24 * 60 * 60000 },
 };
 
 export function PriceChart({ priceData, timeRange }: PriceChartProps) {
   const [history, setHistory] = useState<PriceHistoryPoint[]>([]);
 
   useEffect(() => {
-    const points = TIME_RANGE_POINTS[timeRange];
-    const volatility = timeRange === '24h' ? 0.01 : 0.03;
-    setHistory(generateMockHistory(priceData.price, points, volatility));
+    const config = TIME_RANGE_CONFIG[timeRange];
+    // More volatility for shorter time ranges
+    const volatility = ['1s', '5s', '10s', '15s', '30s'].includes(timeRange) ? 0.005 :
+                       ['1m', '5m', '15m', '30m', '1h'].includes(timeRange) ? 0.01 : 0.03;
+    setHistory(generateMockHistory(priceData.price, config.points, volatility));
   }, [priceData.price, timeRange]);
 
   const formatPrice = (value: number) => {
@@ -48,10 +59,12 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    if (timeRange === '24h') {
+    if (['1s', '5s', '10s', '15s', '30s', '1m', '5m', '15m', '30m'].includes(timeRange)) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } else if (['1h', '4h', '12h', '1d'].includes(timeRange)) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (timeRange === '1m') {
-      return date.toLocaleDateString([], { day: 'numeric' });
+    } else if (timeRange === '1w') {
+      return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
     } else {
       return date.toLocaleDateString([], { month: 'short' });
     }
