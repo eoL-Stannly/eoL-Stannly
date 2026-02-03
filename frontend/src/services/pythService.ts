@@ -47,15 +47,10 @@ export const PRICE_FEEDS = {
     name: 'Avalanche',
     symbol: 'AVAX',
   },
-  DOT: {
-    id: '0xca3eed9b267293f6595901c734c7525ce8ef49adafe8284f36f83a3d7573e5d5',
-    name: 'Polkadot',
-    symbol: 'DOT',
-  },
-  MATIC: {
-    id: '0x5de33440f6c5bc7d572f089c47da68c5e1a85c2f5d7df4b0cf37e2f7f04e5a40',
-    name: 'Polygon',
-    symbol: 'MATIC',
+  PEPE: {
+    id: '0xd69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4',
+    name: 'Pepe',
+    symbol: 'PEPE',
   },
 } as const;
 
@@ -130,9 +125,54 @@ export async function fetchAllPrices(): Promise<PriceData[]> {
 
     return prices;
   } catch (error) {
-    console.error('Error fetching prices from Pyth:', error);
-    throw error;
+    console.error('Error fetching all prices from Pyth, trying individual feeds:', error);
+    // Fallback: fetch prices individually for resilience
+    return fetchPricesIndividually();
   }
+}
+
+// Fallback function to fetch prices one by one
+async function fetchPricesIndividually(): Promise<PriceData[]> {
+  const prices: PriceData[] = [];
+  const symbols = Object.keys(PRICE_FEEDS) as CryptoSymbol[];
+
+  const results = await Promise.allSettled(
+    symbols.map(async (symbol) => {
+      const feed = PRICE_FEEDS[symbol];
+      const priceUpdates = await hermesClient.getLatestPriceUpdates([feed.id]);
+
+      if (!priceUpdates?.parsed?.[0]?.price) {
+        throw new Error(`No price data for ${symbol}`);
+      }
+
+      const update = priceUpdates.parsed[0];
+      const { price, confidence, timestamp } = parsePythPrice(update.price);
+
+      return {
+        symbol,
+        name: feed.name,
+        price,
+        confidence,
+        timestamp,
+      } as PriceData;
+    })
+  );
+
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      prices.push(result.value);
+    }
+  }
+
+  // Sort by the order defined in PRICE_FEEDS
+  const order = Object.keys(PRICE_FEEDS);
+  prices.sort((a, b) => order.indexOf(a.symbol) - order.indexOf(b.symbol));
+
+  if (prices.length === 0) {
+    throw new Error('Failed to fetch any price data');
+  }
+
+  return prices;
 }
 
 // Fetch price for a single feed
