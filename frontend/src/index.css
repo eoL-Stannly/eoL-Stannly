@@ -47,6 +47,28 @@ body {
   overflow-x: hidden;
 }
 
+/* Background template for pages */
+.page-with-background {
+  position: relative;
+  min-height: 100vh;
+}
+
+.page-with-background::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('/assets/fsociety-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.15;
+  z-index: -1;
+  pointer-events: none;
+}
+
 #root {
   min-height: 100vh;
 }
@@ -1091,4 +1113,392 @@ body {
   .main-chart-section {
     padding: 1rem;
   }
+}
+
+/* ============================================
+   CHART VIEW TOGGLE
+   ============================================ */
+
+.chart-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.toggle-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggle-btn:hover {
+  border-color: var(--green-dark);
+  color: var(--green-dim);
+}
+
+.toggle-btn.active {
+  background: var(--green-glow);
+  border-color: var(--green-primary);
+  color: var(--green-primary);
+}
+
+/* TradingView Chart Container */
+.tradingview-container {
+  width: 100%;
+  height: 400px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0;
+}
+
+/* ============================================
+   POOL DETAIL PAGE
+   ============================================ */
+
+.pool-detail-page {
+  padding-top: 100px;
+  min-height: 100vh;
+}
+
+.pool-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.pool-detail-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  color: var(--green-primary);
+  text-shadow: 0 0 30px var(--green-glow);
+}
+
+.back-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--green-dark);
+  color: var(--green-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.back-btn:hover {
+  border-color: var(--green-primary);
+  color: var(--green-primary);
+}
+
+.pool-detail-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .pool-detail-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  position: relative;
+}
+
+.detail-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green-primary), transparent);
+}
+
+.detail-card-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  color: var(--green-primary);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.lock-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lock-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lock-option:hover,
+.lock-option.selected {
+  border-color: var(--green-primary);
+  box-shadow: 0 0 10px var(--green-glow);
+}
+
+.lock-duration {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.lock-multiplier {
+  font-size: 0.9rem;
+  color: var(--green-primary);
+}
+
+.epoch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.epoch-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.epoch-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.epoch-value {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-primary);
+}
+
+.epoch-countdown {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  color: var(--green-primary);
+  text-align: center;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  margin-top: 1rem;
+}
+
+/* Staking Form */
+.staking-form {
+  margin-top: 2rem;
+}
+
+.input-group {
+  margin-bottom: 1rem;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.token-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+}
+
+.token-input:focus {
+  outline: none;
+  border-color: var(--green-primary);
+  box-shadow: 0 0 10px var(--green-glow);
+}
+
+.max-btn {
+  padding: 0.25rem 0.5rem;
+  background: var(--green-glow);
+  border: 1px solid var(--green-dark);
+  color: var(--green-primary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.balance-info {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+}
+
+/* ============================================
+   BOARDROOM PAGE
+   ============================================ */
+
+.boardroom-page {
+  padding-top: 100px;
+  min-height: 100vh;
+}
+
+.boardroom-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  color: var(--green-primary);
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 30px var(--green-glow);
+}
+
+.boardroom-subtitle {
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+.disclaimer {
+  background: rgba(255, 51, 51, 0.1);
+  border: 1px solid var(--red-dim);
+  padding: 1rem;
+  margin-bottom: 2rem;
+  font-size: 0.8rem;
+  color: var(--red-primary);
+}
+
+.disclaimer-icon {
+  margin-right: 0.5rem;
+}
+
+.bond-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.bond-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.bond-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green-primary), transparent);
+}
+
+.bond-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.bond-duration {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.bond-discount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  color: var(--green-primary);
+  text-shadow: 0 0 20px var(--green-glow);
+}
+
+.bond-info {
+  margin-bottom: 1.5rem;
+}
+
+.bond-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bond-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.bond-value {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-primary);
+}
+
+.payment-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.payment-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.payment-btn:hover,
+.payment-btn.active {
+  border-color: var(--green-primary);
+  color: var(--green-primary);
+  background: var(--green-glow);
+}
+
+.bond-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--green-primary);
+  border: none;
+  color: black;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.bond-btn:hover {
+  background: var(--green-bright);
+  box-shadow: 0 0 30px var(--green-glow);
+}
+
+.bond-btn:disabled {
+  background: var(--text-dim);
+  cursor: not-allowed;
 }

@@ -4,15 +4,19 @@ skip-lint = false
 
 [programs.localnet]
 example_token = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+fsociety_staking = "FSoc1111111111111111111111111111111111111111"
+fsociety_bonding = "FBond111111111111111111111111111111111111111"
 
 [programs.devnet]
 example_token = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+fsociety_staking = "FSoc1111111111111111111111111111111111111111"
+fsociety_bonding = "FBond111111111111111111111111111111111111111"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

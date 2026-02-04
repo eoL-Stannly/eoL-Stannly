@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 
 interface PoolData {
+  id: string;
   name: string;
   badge: string;
   apr: number;
@@ -96,7 +98,9 @@ function StakingPool({ pool }: { pool: PoolData }) {
         </div>
       </div>
 
-      <button className="stake-btn">Enter Pool</button>
+      <Link to={`/pool/${pool.id}`} className="stake-btn">
+        Enter Pool
+      </Link>
     </div>
   );
 }
@@ -104,6 +108,7 @@ function StakingPool({ pool }: { pool: PoolData }) {
 export function StakingPage() {
   const pools: PoolData[] = [
     {
+      id: 'penguin',
       name: 'PENGUIN Pool',
       badge: 'HOT',
       apr: 0, // Will be animated
@@ -111,11 +116,20 @@ export function StakingPage() {
       stakers: 2847,
     },
     {
+      id: 'k2',
       name: 'K2 Pool',
       badge: 'NEW',
       apr: 0, // Will be animated
       tvl: '$890K',
       stakers: 1523,
+    },
+    {
+      id: 'shark',
+      name: 'SHARK Pool',
+      badge: 'FEATURED',
+      apr: 0, // Will be animated
+      tvl: '$2.1M',
+      stakers: 4215,
     },
   ];
 

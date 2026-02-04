@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { PriceChart } from './PriceChart';
+import { TradingViewChart } from './TradingViewChart';
 import {
   PriceData,
   CryptoSymbol,
@@ -7,6 +8,8 @@ import {
   fetchAllPrices,
   subscribeToPrices,
 } from '../services/pythService';
+
+type ChartView = 'default' | 'tradingview';
 
 type TimeRange = '1s' | '5s' | '10s' | '15s' | '30s' | '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '12h' | '1d' | '1w' | '1mo';
 
@@ -36,6 +39,7 @@ export function PriceDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [chartView, setChartView] = useState<ChartView>('default');
 
   const loadPrices = useCallback(async () => {
     try {
@@ -155,10 +159,30 @@ export function PriceDashboard() {
         ))}
       </div>
 
+      {/* Chart View Toggle */}
+      <div className="chart-toggle">
+        <button
+          className={`toggle-btn ${chartView === 'default' ? 'active' : ''}`}
+          onClick={() => setChartView('default')}
+        >
+          Area Chart
+        </button>
+        <button
+          className={`toggle-btn ${chartView === 'tradingview' ? 'active' : ''}`}
+          onClick={() => setChartView('tradingview')}
+        >
+          TradingView
+        </button>
+      </div>
+
       {/* Main Chart */}
       {selectedPrice && (
         <div className="main-chart-section">
-          <PriceChart priceData={selectedPrice} timeRange={timeRange} />
+          {chartView === 'default' ? (
+            <PriceChart priceData={selectedPrice} timeRange={timeRange} />
+          ) : (
+            <TradingViewChart priceData={selectedPrice} timeRange={timeRange} />
+          )}
 
           <div className="time-range-selector">
             {TIME_RANGES.map((range) => (

@@ -40,6 +40,14 @@ export const PRICE_FEEDS = {
     mintAddress: '8aZEym6Uv5vuy2LQ9BYNSiSiiKS3JKJEhbiUgpQppump',
     basePrice: 0.00018,
   },
+  SHARK: {
+    id: 'mock',
+    name: 'Shark',
+    symbol: 'SHARK',
+    isMock: true,
+    mintAddress: '63Z3Q7JX3SBGDiiwqqnPTVvHcuUk6ixkzsYQbKzhpump',
+    basePrice: 0.00085,
+  },
   DOGE: {
     id: '0xdcef50dd0a4cd2dcc17e45df1676dcb336a11a61c69df7a0299b0150c672d25c',
     name: 'Dogecoin',

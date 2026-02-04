@@ -61,6 +61,13 @@ export function Navigation() {
         >
           Staking Pools
         </Link>
+        <Link
+          to="/boardroom"
+          className={`nav-link ${isActive('/boardroom') ? 'active' : ''}`}
+          onClick={closeMenu}
+        >
+          Boardroom
+        </Link>
       </nav>
     </>
   );
