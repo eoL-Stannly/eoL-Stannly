@@ -10,9 +10,9 @@ interface LockOption {
 }
 
 const LOCK_OPTIONS: LockOption[] = [
-  { days: 1, multiplier: '1.0x', label: '1 Day' },
-  { days: 3, multiplier: '1.5x', label: '3 Days' },
-  { days: 5, multiplier: '2.0x', label: '5 Days' },
+  { days: 1, multiplier: '+10%', label: '1 Day' },
+  { days: 3, multiplier: '+35%', label: '3 Days' },
+  { days: 5, multiplier: '+60%', label: '5 Days' },
 ];
 
 // Pool configurations
@@ -173,7 +173,7 @@ export function PoolDetailPage() {
     try {
       // For now, just log - actual transaction will be implemented after deployment
       console.log(`Staking ${amount} LP tokens for ${selectedLock} days in ${poolId} pool`);
-      alert(`Staking feature will be available after smart contract deployment to devnet.\n\nTransaction details:\n- Amount: ${amount} ${pool.token}\n- Lock Period: ${selectedLock} days\n- Multiplier: ${selectedLock === 1 ? '1.0x' : selectedLock === 3 ? '1.5x' : '2.0x'}`);
+      alert(`Staking feature will be available after smart contract deployment to devnet.\n\nTransaction details:\n- Amount: ${amount} ${pool.token}\n- Lock Period: ${selectedLock} days\n- Reward Bonus: ${selectedLock === 1 ? '+10%' : selectedLock === 3 ? '+35%' : '+60%'}`);
     } catch (error) {
       console.error('Staking error:', error);
       alert('Failed to stake. Please try again.');
@@ -201,7 +201,7 @@ export function PoolDetailPage() {
   };
 
   const getMultiplier = (days: number) => {
-    return days === 1 ? 1 : days === 3 ? 1.5 : 2;
+    return days === 1 ? 1.1 : days === 3 ? 1.35 : 1.6;
   };
 
   return (
@@ -231,6 +231,9 @@ export function PoolDetailPage() {
                   <span className="lock-multiplier">{option.multiplier} Rewards</span>
                 </div>
               ))}
+            </div>
+            <div className="disclaimer" style={{ marginTop: '1rem', fontSize: '0.7rem', color: 'var(--text-dim)', padding: '0.5rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
+              <strong style={{ color: 'var(--green-dim)' }}>Note:</strong> Reward bonuses are dynamic and can change rapidly based on protocol conditions.
             </div>
 
             <div className="staking-form">

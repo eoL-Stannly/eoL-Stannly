@@ -98,6 +98,12 @@ function StakingPool({ pool }: { pool: PoolData }) {
         </div>
       </div>
 
+      <div className="lock-bonuses">
+        <div className="bonus-item">1D: <span className="bonus-value">+10%</span></div>
+        <div className="bonus-item">3D: <span className="bonus-value">+35%</span></div>
+        <div className="bonus-item">5D: <span className="bonus-value">+60%</span></div>
+      </div>
+
       <Link to={`/pool/${pool.id}`} className="stake-btn">
         Enter Pool
       </Link>
@@ -138,8 +144,12 @@ export function StakingPage() {
       <div className="app-content">
         <h1 className="staking-title">&gt; STAKING_POOLS</h1>
         <p className="staking-subtitle">
-          Stake your tokens and earn dynamic rewards
+          Stake your tokens and earn dynamic rewards. Lock longer for bigger bonuses.
         </p>
+
+        <div className="disclaimer" style={{ maxWidth: '600px', margin: '0 auto 1.5rem', fontSize: '0.75rem', color: 'var(--text-dim)', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+          <strong style={{ color: 'var(--green-dim)' }}>Note:</strong> Lock period bonuses (1 day: +10%, 3 days: +35%, 5 days: +60%) are dynamic and can change rapidly based on protocol conditions.
+        </div>
 
         <div className="staking-grid">
           {pools.map((pool, index) => (

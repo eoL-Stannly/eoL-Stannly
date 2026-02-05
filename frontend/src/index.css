@@ -865,6 +865,26 @@ body {
   color: var(--text-primary);
 }
 
+.lock-bonuses {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 255, 0, 0.03);
+  border: 1px solid var(--border-color);
+}
+
+.bonus-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.bonus-value {
+  color: var(--green-primary);
+  font-weight: 600;
+}
+
 .stake-btn {
   width: 100%;
   padding: 1rem;

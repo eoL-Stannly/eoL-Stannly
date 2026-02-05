@@ -11,10 +11,10 @@ pub const LOCK_1_DAY: u8 = 1;
 pub const LOCK_3_DAYS: u8 = 3;
 pub const LOCK_5_DAYS: u8 = 5;
 
-/// Reward multipliers (in basis points, 10000 = 1x)
-pub const MULTIPLIER_1_DAY: u64 = 10000;  // 1.0x
-pub const MULTIPLIER_3_DAYS: u64 = 15000; // 1.5x
-pub const MULTIPLIER_5_DAYS: u64 = 20000; // 2.0x
+/// Reward multipliers (in basis points, 10000 = 1x, 11000 = 1.1x = +10%)
+pub const MULTIPLIER_1_DAY: u64 = 11000;  // 1.1x (+10% bonus)
+pub const MULTIPLIER_3_DAYS: u64 = 13500; // 1.35x (+35% bonus)
+pub const MULTIPLIER_5_DAYS: u64 = 16000; // 1.6x (+60% bonus)
 
 /// Base APR in basis points (adjustable by admin)
 pub const DEFAULT_BASE_APR: u64 = 5000; // 50%
