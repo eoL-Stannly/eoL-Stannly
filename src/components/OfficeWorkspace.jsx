@@ -1,33 +1,58 @@
 import React from 'react';
 import { AGENT_STATES } from '../agents/AgentDefinitions.js';
 
-/**
- * The main office workspace - a top-down isometric-style view
- * of the office where cartoon agent characters sit at their desks.
- */
 export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }) {
   return (
-    <div className="office-workspace">
-      <div className="office-floor">
-        {/* Office decorations */}
-        <div className="office-plant plant-1">🌿</div>
-        <div className="office-plant plant-2">🪴</div>
-        <div className="office-water-cooler">🚰</div>
-        <div className="office-whiteboard">
-          <div className="whiteboard-content">
-            <div className="wb-title">Sprint Board</div>
-            <div className="wb-items">
-              <span className="wb-done">✓ Setup</span>
-              <span className="wb-progress">→ Build</span>
-              <span className="wb-todo">○ Ship</span>
-            </div>
+    <div className="game-office">
+      {/* Top decoration shelf */}
+      <div className="office-shelf">
+        <div className="shelf-item shelf-drinks">
+          <span className="shelf-icon">&#9749;</span>
+          <span className="shelf-icon">&#127849;</span>
+        </div>
+        <div className="shelf-item shelf-window">
+          <div className="pixel-window">
+            <div className="win-pane"></div>
+            <div className="win-pane"></div>
+            <div className="win-pane"></div>
+            <div className="win-pane"></div>
           </div>
         </div>
+        <div className="shelf-item shelf-center">
+          <span className="shelf-icon">&#128200;</span>
+          <span className="shelf-icon">&#128336;</span>
+        </div>
+        <div className="shelf-item shelf-window">
+          <div className="pixel-window">
+            <div className="win-pane"></div>
+            <div className="win-pane"></div>
+            <div className="win-pane"></div>
+            <div className="win-pane"></div>
+          </div>
+        </div>
+        <div className="shelf-item shelf-board">
+          <span className="shelf-icon">&#128204;</span>
+          <span className="shelf-icon">&#128196;</span>
+        </div>
+      </div>
 
-        {/* Agent desks */}
-        <div className="desk-grid">
+      {/* Title */}
+      <div className="office-title-bar">
+        <span className="sparkle-icon">&#10024;</span>
+        SEO AGENT OFFICE
+        <span className="sparkle-icon">&#10024;</span>
+      </div>
+
+      {/* The brick floor with agents */}
+      <div className="office-floor">
+        {/* Decorations */}
+        <div className="floor-plant" style={{ bottom: 12, right: 30 }}>&#127793;</div>
+        <div className="floor-plant" style={{ top: 12, left: 20 }}>&#127811;</div>
+
+        {/* Agent grid */}
+        <div className="agent-grid">
           {agents.map((agent) => (
-            <AgentDesk
+            <AgentStation
               key={agent.id}
               agent={agent}
               isSelected={selectedAgent === agent.id}
@@ -35,139 +60,159 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
             />
           ))}
         </div>
-
-        {/* Center meeting table */}
-        <div className="meeting-table">
-          <span className="table-label">Team Hub</span>
-        </div>
       </div>
     </div>
   );
 }
 
-function AgentDesk({ agent, isSelected, onClick }) {
-  const stateClass = `agent-state-${agent.state}`;
+function AgentStation({ agent, isSelected, onClick }) {
   const isActive = agent.state !== AGENT_STATES.IDLE;
+  const isWorking = agent.state === AGENT_STATES.WORKING || agent.state === AGENT_STATES.THINKING;
+  const isWalking = agent.state === AGENT_STATES.WALKING;
+  const isCelebrating = agent.state === AGENT_STATES.CELEBRATING;
+  const isCoffee = agent.state === AGENT_STATES.COFFEE;
+  const isCollab = agent.state === AGENT_STATES.COLLABORATING || agent.state === AGENT_STATES.PRESENTING;
 
   return (
-    <div
-      className={`agent-desk ${stateClass} ${isSelected ? 'selected' : ''}`}
-      onClick={onClick}
-      style={{ '--agent-color': agent.color }}
-    >
-      {/* Status bubble */}
-      {isActive && (
-        <div className="status-bubble">
-          <span className="bubble-text">{getStatusText(agent.state)}</span>
-        </div>
-      )}
-
-      {/* The character */}
-      <div className={`agent-character ${isActive ? 'active' : 'idle'}`}>
-        <div className="character-body" style={{ backgroundColor: agent.color }}>
-          {/* Head */}
-          <div className="character-head">
-            <div className="character-face">
-              <span className="eyes">{getEyes(agent.state)}</span>
-              <span className="mouth">{getMouth(agent.state)}</span>
-            </div>
-            {agent.state === AGENT_STATES.THINKING && (
-              <div className="thought-bubbles">
-                <span className="thought t1">.</span>
-                <span className="thought t2">.</span>
-                <span className="thought t3">💡</span>
-              </div>
-            )}
+    <div className={`agent-station ${isSelected ? 'station-selected' : ''}`} onClick={onClick}>
+      {/* Character */}
+      <div className={`pixel-char ${isActive ? 'char-active' : ''} ${isWalking ? 'char-walk' : ''}`}>
+        {/* Thinking / celebration effects */}
+        {agent.state === AGENT_STATES.THINKING && (
+          <div className="think-effect">&#128161;</div>
+        )}
+        {isCelebrating && (
+          <div className="celebrate-fx">
+            <span className="conf c0">&#10024;</span>
+            <span className="conf c1">&#127881;</span>
+            <span className="conf c2">&#10024;</span>
           </div>
-          {/* Body / Arms animation */}
-          <div className={`character-arms ${isActive ? 'typing' : 'resting'}`}>
-            <span className="arm left">╰</span>
-            <span className="arm right">╯</span>
-          </div>
+        )}
+        {isCoffee && (
+          <div className="coffee-fx">&#9749;</div>
+        )}
+
+        {/* Hair */}
+        <div className="ch-hair" style={{ background: agent.hairColor }}></div>
+        {/* Head */}
+        <div className="ch-head" style={{ background: agent.skinTone }}>
+          <div className="ch-eye ch-eye-l"></div>
+          <div className="ch-eye ch-eye-r"></div>
+        </div>
+        {/* Body */}
+        <div className="ch-body" style={{ background: agent.shirtColor }}></div>
+        {/* Legs */}
+        <div className="ch-legs">
+          <div className={`ch-leg ch-leg-l ${isWalking ? 'walk-l' : ''}`}></div>
+          <div className={`ch-leg ch-leg-r ${isWalking ? 'walk-r' : ''}`}></div>
         </div>
       </div>
 
-      {/* Desk surface */}
-      <div className="desk-surface">
-        <div className="desk-items">
-          <span className="desk-computer">{getComputerIcon(agent.state)}</span>
-          <span className="desk-accessory">{getDeskAccessory(agent.role)}</span>
+      {/* Status label */}
+      <div className={`state-tag ${isWorking ? 'tag-working' : ''} ${isCelebrating ? 'tag-done' : ''} ${isCollab ? 'tag-collab' : ''} ${isCoffee ? 'tag-coffee' : ''}`}>
+        {getLabel(agent.state)}
+      </div>
+
+      {/* Desk */}
+      <div className="px-desk">
+        <div className="desk-top-surface">
+          <DeskItems role={agent.role} state={agent.state} />
         </div>
+        <div className="desk-front-face"></div>
       </div>
 
-      {/* Name plate */}
-      <div className="name-plate">
-        <span className="agent-name">{agent.name}</span>
-        <span className="agent-title">{agent.title}</span>
-      </div>
+      {/* Nameplate */}
+      <div className="px-nameplate">{agent.name}</div>
+      <div className="px-title">{agent.title}</div>
 
-      {/* Task counter badge */}
+      {/* Task badge */}
       {agent.completedTasks > 0 && (
-        <div className="task-badge">{agent.completedTasks}</div>
-      )}
-
-      {/* Active glow effect */}
-      {isActive && <div className="active-glow" />}
-
-      {/* Celebration particles */}
-      {agent.state === AGENT_STATES.CELEBRATING && (
-        <div className="celebration">
-          {['🎉', '⭐', '✨', '🎊'].map((emoji, i) => (
-            <span key={i} className={`particle p${i}`}>{emoji}</span>
-          ))}
-        </div>
+        <div className="px-badge">{agent.completedTasks}</div>
       )}
     </div>
   );
 }
 
-function getEyes(state) {
-  switch (state) {
-    case AGENT_STATES.WORKING: return '◉ ◉';
-    case AGENT_STATES.THINKING: return '◑ ◑';
-    case AGENT_STATES.COLLABORATING: return '◕ ◕';
-    case AGENT_STATES.BLOCKED: return '✖ ✖';
-    case AGENT_STATES.CELEBRATING: return '◠ ◠';
-    default: return '● ●';
+function DeskItems({ role, state }) {
+  const isWorking = state === AGENT_STATES.WORKING || state === AGENT_STATES.THINKING;
+
+  if (role === 'data_engineer') {
+    return (
+      <>
+        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
+          <div className="mon-screen mon-code">
+            <div className="code-ln c1"></div>
+            <div className="code-ln c2"></div>
+            <div className="code-ln c3"></div>
+          </div>
+        </div>
+        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
+          <div className="mon-screen mon-data">
+            <div className="data-br d1"></div>
+            <div className="data-br d2"></div>
+            <div className="data-br d3"></div>
+            <div className="data-br d4"></div>
+          </div>
+        </div>
+        <div className="desk-obj">&#127911;</div>
+      </>
+    );
   }
-}
 
-function getMouth(state) {
-  switch (state) {
-    case AGENT_STATES.WORKING: return '▬';
-    case AGENT_STATES.THINKING: return '○';
-    case AGENT_STATES.COLLABORATING: return '◡';
-    case AGENT_STATES.BLOCKED: return '▿';
-    case AGENT_STATES.CELEBRATING: return '◡';
-    default: return '‿';
+  if (role === 'coo' || role === 'account_manager') {
+    return (
+      <>
+        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
+          <div className="mon-screen mon-chart">
+            <div className="chart-line"></div>
+          </div>
+        </div>
+        <div className="desk-obj desk-clipboard">
+          <div className="clip-check">&#10003;</div>
+          <div className="clip-check">&#10003;</div>
+        </div>
+      </>
+    );
   }
-}
 
-function getStatusText(state) {
-  switch (state) {
-    case AGENT_STATES.WORKING: return 'Working...';
-    case AGENT_STATES.THINKING: return 'Thinking...';
-    case AGENT_STATES.COLLABORATING: return 'Collab!';
-    case AGENT_STATES.BLOCKED: return 'Blocked!';
-    case AGENT_STATES.CELEBRATING: return 'Done! 🎉';
-    default: return '';
+  if (role === 'principal_seo' || role === 'head_of_seo') {
+    return (
+      <>
+        <div className="desk-obj">&#128269;</div>
+        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
+          <div className="mon-screen mon-serp">
+            <div className="serp-ln s1"></div>
+            <div className="serp-ln s2"></div>
+            <div className="serp-ln s3"></div>
+          </div>
+        </div>
+        <div className="desk-obj">&#128202;</div>
+      </>
+    );
   }
+
+  return (
+    <>
+      <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
+        <div className="mon-screen mon-kw">
+          <div className="kw-block k1"></div>
+          <div className="kw-block k2"></div>
+        </div>
+      </div>
+      <div className="desk-obj">&#128214;</div>
+    </>
+  );
 }
 
-function getComputerIcon(state) {
-  if (state === AGENT_STATES.WORKING) return '💻';
-  if (state === AGENT_STATES.THINKING) return '🖥️';
-  return '🖥️';
-}
-
-function getDeskAccessory(role) {
-  switch (role) {
-    case 'planner': return '📊';
-    case 'researcher': return '📚';
-    case 'coder': return '☕';
-    case 'reviewer': return '🔍';
-    case 'tester': return '🧪';
-    case 'documenter': return '📒';
-    default: return '📎';
+function getLabel(state) {
+  switch (state) {
+    case AGENT_STATES.WORKING: return 'working...';
+    case AGENT_STATES.THINKING: return 'thinking...';
+    case AGENT_STATES.WALKING: return 'walking';
+    case AGENT_STATES.COLLABORATING: return 'meeting';
+    case AGENT_STATES.PRESENTING: return 'presenting';
+    case AGENT_STATES.COFFEE: return 'coffee break';
+    case AGENT_STATES.CELEBRATING: return 'done!';
+    default: return 'idle';
   }
 }
