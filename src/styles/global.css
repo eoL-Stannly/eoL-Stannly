@@ -47,10 +47,10 @@ body {
   flex: 1;
   overflow: auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   background: var(--bg-dark);
-  padding: 8px;
+  padding: 0;
 }
 
 .game-right {
@@ -66,7 +66,7 @@ body {
 /* ---- Game Office ---- */
 .game-office {
   width: 100%;
-  max-width: 1000px;
+  height: 100%;
   display: flex;
   flex-direction: column;
   image-rendering: pixelated;
@@ -114,13 +114,14 @@ body {
 /* ---- Title Bar ---- */
 .office-title-bar {
   text-align: center;
-  padding: 6px 0;
-  font-size: 11px;
+  padding: 8px 0;
+  font-size: 9px;
   letter-spacing: 2px;
   color: var(--gold);
   background: var(--bg-wall);
   border-left: 3px solid #3a3a2a;
   border-right: 3px solid #3a3a2a;
+  text-shadow: 0 0 8px rgba(240,192,64,0.4);
 }
 
 .sparkle-icon {
@@ -132,6 +133,7 @@ body {
 /* ---- Office Floor ---- */
 .office-floor {
   position: relative;
+  flex: 1;
   background:
     repeating-linear-gradient(
       90deg,
@@ -147,8 +149,10 @@ body {
   background-color: var(--floor-1);
   border: 3px solid #3a3a2a;
   border-top: none;
-  padding: 24px 16px 20px;
-  min-height: 480px;
+  padding: 32px 24px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .floor-plant {
@@ -163,9 +167,11 @@ body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 12px 8px;
+  gap: 16px 12px;
   position: relative;
   z-index: 2;
+  width: 100%;
+  max-width: 1100px;
 }
 
 /* ---- Agent Station ---- */
@@ -412,22 +418,29 @@ body {
 /* ---- Nameplate ---- */
 .px-nameplate {
   font-family: var(--pixel-font);
-  font-size: 7px;
-  color: var(--text-light);
-  background: var(--desk-front);
-  padding: 2px 8px;
+  font-size: 8px;
+  color: #fff;
+  background: rgba(0,0,0,0.75);
+  padding: 3px 10px;
   border-radius: 2px;
   margin-top: 4px;
-  border: 1px solid var(--desk-shadow);
+  border: 1px solid rgba(255,255,255,0.15);
   text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
 }
 
 .px-title {
-  font-family: var(--pixel-font);
-  font-size: 5px;
-  color: var(--text-dim);
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 8px;
+  border-radius: 2px;
   margin-top: 2px;
   text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  letter-spacing: 0.3px;
 }
 
 /* ---- Task Badge ---- */
@@ -929,6 +942,76 @@ body {
   border-radius: 2px;
   color: var(--text-dim);
   text-transform: capitalize;
+}
+
+/* ---- Long Hair ---- */
+.ch-hair-long {
+  width: 30px;
+  height: 10px;
+  border-radius: 8px 8px 0 0;
+}
+
+.ch-hair-side {
+  position: absolute;
+  width: 6px;
+  top: 8px;
+  height: 28px;
+  border-radius: 0 0 3px 3px;
+  z-index: 0;
+}
+
+.ch-hair-side-l { left: -2px; }
+.ch-hair-side-r { right: -2px; }
+
+/* ---- KB Categories ---- */
+.kb-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.kb-cat-btn {
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  padding: 3px 6px;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+.kb-cat-btn:hover {
+  color: var(--text-light);
+  border-color: var(--text-dim);
+}
+
+.kb-cat-btn.kb-cat-active {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: rgba(240,192,64,0.1);
+}
+
+.kb-doc-count {
+  margin-left: auto;
+  font-size: 5px;
+  color: var(--text-dim);
+  font-weight: normal;
+}
+
+.kb-item-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 3px;
+}
+
+.kb-item-owner {
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  color: var(--gold);
+  opacity: 0.7;
 }
 
 /* ---- Scrollbar ---- */

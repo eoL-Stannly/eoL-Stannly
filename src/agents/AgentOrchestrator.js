@@ -244,21 +244,22 @@ export class AgentOrchestrator {
 
     // Return structured response based on agent role
     const responses = {
-      planner: {
-        analysis: `Analyzed the task and created a plan`,
+      principal_seo: {
+        analysis: 'Technical SEO audit completed',
+        recommendations: ['Fix crawl errors', 'Optimize site architecture', 'Implement structured data'],
+      },
+      coo: {
+        analysis: 'Task triaged and delegated',
         subtasks: [
-          { role: 'researcher', description: 'Research requirements and constraints' },
-          { role: 'coder', description: 'Implement the solution' },
-          { role: 'tester', description: 'Write and run tests' },
-          { role: 'reviewer', description: 'Review the implementation' },
-          { role: 'documenter', description: 'Document the changes' },
+          { role: 'seo_director', description: 'Conduct keyword research and content analysis' },
+          { role: 'data_engineer', description: 'Pull analytics data and build dashboard' },
+          { role: 'head_of_seo', description: 'Review findings and identify quick wins' },
         ],
       },
-      researcher: { findings: 'Researched the topic using knowledge base', sources: [] },
-      coder: { code: '// Implementation here', language: 'javascript' },
-      reviewer: { approved: true, comments: [] },
-      tester: { passed: true, coverage: '87%' },
-      documenter: { documentation: 'Documentation updated' },
+      seo_director: { findings: 'Content and keyword analysis completed', keywords: [], gaps: [] },
+      head_of_seo: { quickWins: ['Update title tags', 'Add internal links', 'Fix broken links'], reviewed: true },
+      account_manager: { report: 'Client report prepared', metrics: { traffic: '+12%', rankings: '+5 positions' } },
+      data_engineer: { pipeline: 'Data pipeline executed', insights: [], dashboardUrl: '#' },
     };
 
     return responses[agent.role] || { result: 'Task processed' };
@@ -282,17 +283,19 @@ export class AgentOrchestrator {
 
   inferRole(description) {
     const lower = description.toLowerCase();
-    if (lower.includes('research') || lower.includes('find') || lower.includes('search'))
-      return 'researcher';
-    if (lower.includes('code') || lower.includes('implement') || lower.includes('build'))
-      return 'coder';
-    if (lower.includes('review') || lower.includes('check'))
-      return 'reviewer';
-    if (lower.includes('test') || lower.includes('verify'))
-      return 'tester';
-    if (lower.includes('document') || lower.includes('write'))
-      return 'documenter';
-    return 'planner';
+    if (lower.includes('technical') || lower.includes('crawl') || lower.includes('architecture') || lower.includes('speed') || lower.includes('core web vitals'))
+      return 'principal_seo';
+    if (lower.includes('keyword') || lower.includes('content') || lower.includes('on-page') || lower.includes('topic cluster'))
+      return 'seo_director';
+    if (lower.includes('local') || lower.includes('gbp') || lower.includes('citation') || lower.includes('eeat'))
+      return 'seo_director';
+    if (lower.includes('data') || lower.includes('analytics') || lower.includes('pipeline') || lower.includes('dashboard') || lower.includes('scrape'))
+      return 'data_engineer';
+    if (lower.includes('link') || lower.includes('outreach') || lower.includes('pr'))
+      return 'head_of_seo';
+    if (lower.includes('client') || lower.includes('report') || lower.includes('campaign'))
+      return 'account_manager';
+    return 'coo';
   }
 
   getStatus() {

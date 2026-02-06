@@ -39,7 +39,7 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
       {/* Title */}
       <div className="office-title-bar">
         <span className="sparkle-icon">&#10024;</span>
-        SEO AGENT OFFICE
+        AGI - Ayima General Intelligence - HQ
         <span className="sparkle-icon">&#10024;</span>
       </div>
 
@@ -93,12 +93,19 @@ function AgentStation({ agent, isSelected, onClick }) {
         )}
 
         {/* Hair */}
-        <div className="ch-hair" style={{ background: agent.hairColor }}></div>
+        <div className={`ch-hair ${agent.longHair ? 'ch-hair-long' : ''}`} style={{ background: agent.hairColor }}></div>
         {/* Head */}
         <div className="ch-head" style={{ background: agent.skinTone }}>
           <div className="ch-eye ch-eye-l"></div>
           <div className="ch-eye ch-eye-r"></div>
         </div>
+        {/* Long hair sides */}
+        {agent.longHair && (
+          <>
+            <div className="ch-hair-side ch-hair-side-l" style={{ background: agent.hairColor }}></div>
+            <div className="ch-hair-side ch-hair-side-r" style={{ background: agent.hairColor }}></div>
+          </>
+        )}
         {/* Body */}
         <div className="ch-body" style={{ background: agent.shirtColor }}></div>
         {/* Legs */}
