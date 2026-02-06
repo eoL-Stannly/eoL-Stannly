@@ -13,9 +13,9 @@ export const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyT
 
 // Lock periods
 export const LOCK_PERIODS = {
-  DAY_1: { days: 1, multiplier: 1.0, label: '1 Day' },
-  DAY_3: { days: 3, multiplier: 1.5, label: '3 Days' },
-  DAY_5: { days: 5, multiplier: 2.0, label: '5 Days' },
+  DAY_1: { days: 1, multiplier: 1.1, label: '1 Day', bonus: '+10%' },
+  DAY_3: { days: 3, multiplier: 1.35, label: '3 Days', bonus: '+35%' },
+  DAY_5: { days: 5, multiplier: 1.6, label: '5 Days', bonus: '+60%' },
 };
 
 // Bond discounts
