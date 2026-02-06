@@ -944,6 +944,131 @@ body {
   text-transform: capitalize;
 }
 
+/* ---- Speech Bubbles ---- */
+.speech-bubble {
+  position: absolute;
+  top: -42px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: #1a1a1a;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  animation: bubble-appear 0.3s ease-out;
+  pointer-events: none;
+}
+
+.speech-tail {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #fff;
+}
+
+.speech-bubble-wc {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  max-width: 140px;
+}
+
+/* ---- Water Cooler ---- */
+.water-cooler-area {
+  position: absolute;
+  bottom: 16px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+}
+
+.water-cooler {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wc-bottle {
+  width: 14px;
+  height: 20px;
+  background: linear-gradient(180deg, #b3e5fc 0%, #81d4fa 100%);
+  border: 2px solid #4fc3f7;
+  border-radius: 4px 4px 0 0;
+  opacity: 0.85;
+}
+
+.wc-base {
+  width: 20px;
+  height: 16px;
+  background: #e0e0e0;
+  border: 2px solid #bdbdbd;
+  border-radius: 0 0 3px 3px;
+  margin-top: -1px;
+}
+
+.wc-label {
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.wc-agents {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.wc-agent-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wc-mini-char {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: char-bob 0.8s ease-in-out infinite;
+}
+
+.wc-name {
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  color: #fff;
+  background: rgba(0,0,0,0.6);
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-top: 2px;
+}
+
+/* Agent at water cooler - dim their desk station */
+.station-at-cooler .pixel-char {
+  opacity: 0.2;
+}
+
+.station-at-cooler .state-tag {
+  color: #64b5f6;
+  border: 1px solid #64b5f6;
+}
+
 /* ---- Long Hair ---- */
 .ch-hair-long {
   width: 30px;
@@ -1055,6 +1180,11 @@ body {
 @keyframes dot-pulse {
   0%, 100% { box-shadow: 0 0 2px currentColor; }
   50% { box-shadow: 0 0 8px currentColor; }
+}
+
+@keyframes bubble-appear {
+  0% { opacity: 0; transform: translateX(-50%) translateY(4px) scale(0.8); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 /* ---- Responsive ---- */

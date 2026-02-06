@@ -2,6 +2,8 @@ import React from 'react';
 import { AGENT_STATES } from '../agents/AgentDefinitions.js';
 
 export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }) {
+  const waterCoolerAgents = agents.filter((a) => a.atWaterCooler);
+
   return (
     <div className="game-office">
       {/* Top decoration shelf */}
@@ -49,6 +51,37 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
         <div className="floor-plant" style={{ bottom: 12, right: 30 }}>&#127793;</div>
         <div className="floor-plant" style={{ top: 12, left: 20 }}>&#127811;</div>
 
+        {/* Water Cooler Area */}
+        <div className="water-cooler-area">
+          <div className="water-cooler">
+            <div className="wc-bottle"></div>
+            <div className="wc-base"></div>
+            <div className="wc-label">&#128167;</div>
+          </div>
+          {waterCoolerAgents.length > 0 && (
+            <div className="wc-agents">
+              {waterCoolerAgents.map((agent) => (
+                <div key={agent.id} className="wc-agent-mini">
+                  <div className="wc-mini-char">
+                    {agent.speechBubble && (
+                      <div className="speech-bubble speech-bubble-wc">
+                        {agent.speechBubble}
+                      </div>
+                    )}
+                    <div className={`ch-hair ${agent.longHair ? 'ch-hair-long' : ''}`} style={{ background: agent.hairColor }}></div>
+                    <div className="ch-head" style={{ background: agent.skinTone }}>
+                      <div className="ch-eye ch-eye-l"></div>
+                      <div className="ch-eye ch-eye-r"></div>
+                    </div>
+                    <div className="ch-body" style={{ background: agent.shirtColor }}></div>
+                  </div>
+                  <div className="wc-name">{agent.name}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Agent grid */}
         <div className="agent-grid">
           {agents.map((agent) => (
@@ -72,11 +105,20 @@ function AgentStation({ agent, isSelected, onClick }) {
   const isCelebrating = agent.state === AGENT_STATES.CELEBRATING;
   const isCoffee = agent.state === AGENT_STATES.COFFEE;
   const isCollab = agent.state === AGENT_STATES.COLLABORATING || agent.state === AGENT_STATES.PRESENTING;
+  const isAtCooler = agent.atWaterCooler;
 
   return (
-    <div className={`agent-station ${isSelected ? 'station-selected' : ''}`} onClick={onClick}>
+    <div className={`agent-station ${isSelected ? 'station-selected' : ''} ${isAtCooler ? 'station-at-cooler' : ''}`} onClick={onClick}>
+      {/* Speech Bubble */}
+      {agent.speechBubble && !isAtCooler && (
+        <div className="speech-bubble">
+          {agent.speechBubble}
+          <div className="speech-tail"></div>
+        </div>
+      )}
+
       {/* Character */}
-      <div className={`pixel-char ${isActive ? 'char-active' : ''} ${isWalking ? 'char-walk' : ''}`}>
+      <div className={`pixel-char ${isActive ? 'char-active' : ''} ${isWalking ? 'char-walk' : ''} ${isAtCooler ? 'char-away' : ''}`}>
         {/* Thinking / celebration effects */}
         {agent.state === AGENT_STATES.THINKING && (
           <div className="think-effect">&#128161;</div>
@@ -117,7 +159,7 @@ function AgentStation({ agent, isSelected, onClick }) {
 
       {/* Status label */}
       <div className={`state-tag ${isWorking ? 'tag-working' : ''} ${isCelebrating ? 'tag-done' : ''} ${isCollab ? 'tag-collab' : ''} ${isCoffee ? 'tag-coffee' : ''}`}>
-        {getLabel(agent.state)}
+        {getLabel(agent.state, isAtCooler)}
       </div>
 
       {/* Desk */}
@@ -211,12 +253,13 @@ function DeskItems({ role, state }) {
   );
 }
 
-function getLabel(state) {
+function getLabel(state, atCooler) {
+  if (atCooler) return 'water cooler';
   switch (state) {
     case AGENT_STATES.WORKING: return 'working...';
     case AGENT_STATES.THINKING: return 'thinking...';
     case AGENT_STATES.WALKING: return 'walking';
-    case AGENT_STATES.COLLABORATING: return 'meeting';
+    case AGENT_STATES.COLLABORATING: return 'chatting';
     case AGENT_STATES.PRESENTING: return 'presenting';
     case AGENT_STATES.COFFEE: return 'coffee break';
     case AGENT_STATES.CELEBRATING: return 'done!';
