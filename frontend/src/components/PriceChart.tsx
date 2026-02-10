@@ -37,11 +37,11 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
 
   useEffect(() => {
     const config = TIME_RANGE_CONFIG[timeRange];
-    // More volatility for longer time ranges (larger price swings over time)
-    const volatility = ['1m', '5m', '15m'].includes(timeRange) ? 0.005 :
-                       ['1h', '4h', '12h'].includes(timeRange) ? 0.01 :
-                       ['1d', '1w'].includes(timeRange) ? 0.02 : 0.05;
-    setHistory(generateMockHistory(priceData.price, config.points, volatility));
+    // Mild volatility - less for short timeframes, slightly more for longer
+    const volatility = ['1m', '5m', '15m'].includes(timeRange) ? 0.002 :
+                       ['1h', '4h', '12h'].includes(timeRange) ? 0.004 :
+                       ['1d', '1w'].includes(timeRange) ? 0.006 : 0.008;
+    setHistory(generateMockHistory(priceData.price, config.points, volatility, config.intervalMs));
   }, [priceData.price, timeRange]);
 
   const formatPrice = (value: number) => {

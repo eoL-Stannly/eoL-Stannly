@@ -281,20 +281,29 @@ export async function fetchPrice(symbol: CryptoSymbol): Promise<PriceData> {
 export function generateMockHistory(
   currentPrice: number,
   points: number = 50,
-  volatility: number = 0.02
+  volatility: number = 0.02,
+  intervalMs?: number
 ): PriceHistoryPoint[] {
   const history: PriceHistoryPoint[] = [];
   const now = Date.now();
-  const interval = (24 * 60 * 60 * 1000) / points;
+  // Use provided interval or default to spread across 24 hours
+  const interval = intervalMs || (24 * 60 * 60 * 1000) / points;
 
-  let price = currentPrice * (1 - volatility * points * 0.3);
+  // Start closer to current price with mild variance
+  let price = currentPrice * (0.97 + Math.random() * 0.03);
 
   for (let i = 0; i < points; i++) {
-    const change = (Math.random() - 0.45) * volatility * price;
-    price = Math.max(price + change, price * 0.9);
+    // Balanced random walk (no bias)
+    const change = (Math.random() - 0.5) * volatility * price;
+    price = price + change;
 
+    // Keep price within reasonable bounds (±10% of current)
+    price = Math.max(price, currentPrice * 0.9);
+    price = Math.min(price, currentPrice * 1.1);
+
+    // Gradually trend toward current price in last 30%
     if (i > points * 0.7) {
-      price = price + (currentPrice - price) * 0.1;
+      price = price + (currentPrice - price) * 0.15;
     }
 
     history.push({
@@ -303,6 +312,7 @@ export function generateMockHistory(
     });
   }
 
+  // Ensure last point is exactly current price
   history[history.length - 1].price = currentPrice;
 
   return history;
