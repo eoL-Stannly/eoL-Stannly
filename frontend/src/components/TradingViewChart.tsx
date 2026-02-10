@@ -15,17 +15,32 @@ interface TradingViewChartProps {
   timeRange: string;
 }
 
+// Time range to candle interval mapping (in seconds)
+const CANDLE_INTERVALS: Record<string, { interval: number; points: number; volatility: number }> = {
+  '1m': { interval: 1, points: 60, volatility: 0.002 },           // 1 sec candles for 1 min view
+  '5m': { interval: 5, points: 60, volatility: 0.003 },           // 5 sec candles for 5 min view
+  '15m': { interval: 15, points: 60, volatility: 0.005 },         // 15 sec candles for 15 min view
+  '1h': { interval: 60, points: 60, volatility: 0.008 },          // 1 min candles for 1 hour view
+  '4h': { interval: 300, points: 48, volatility: 0.01 },          // 5 min candles for 4 hour view
+  '12h': { interval: 600, points: 72, volatility: 0.012 },        // 10 min candles for 12 hour view
+  '1d': { interval: 1800, points: 48, volatility: 0.015 },        // 30 min candles for 1 day view
+  '1w': { interval: 7200, points: 84, volatility: 0.02 },         // 2 hour candles for 1 week view
+  '1mo': { interval: 43200, points: 60, volatility: 0.03 },       // 12 hour candles for 1 month view
+};
+
 // Generate candlestick data from price history
-function generateCandlestickData(currentPrice: number, points: number = 100): CandlestickData<Time>[] {
+function generateCandlestickData(currentPrice: number, timeRange: string): CandlestickData<Time>[] {
+  const config = CANDLE_INTERVALS[timeRange] || CANDLE_INTERVALS['1d'];
+  const { interval, points, volatility: volPercent } = config;
+
   const data: CandlestickData<Time>[] = [];
   const now = Math.floor(Date.now() / 1000);
-  const interval = 3600; // 1 hour candles
 
   let price = currentPrice * (0.85 + Math.random() * 0.1);
 
   for (let i = 0; i < points; i++) {
     const time = (now - (points - i) * interval) as Time;
-    const volatility = currentPrice * 0.02;
+    const volatility = currentPrice * volPercent;
 
     const open = price;
     const close = open + (Math.random() - 0.48) * volatility;
@@ -131,7 +146,7 @@ export function TradingViewChart({ priceData, timeRange }: TradingViewChartProps
     volumeSeriesRef.current = volumeSeries;
 
     // Generate and set data
-    const candleData = generateCandlestickData(priceData.price);
+    const candleData = generateCandlestickData(priceData.price, timeRange);
     candleSeries.setData(candleData);
 
     // Generate volume data
@@ -157,12 +172,12 @@ export function TradingViewChart({ priceData, timeRange }: TradingViewChartProps
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [priceData.symbol]);
+  }, [priceData.symbol, timeRange]);
 
-  // Update data when price changes
+  // Update data when price or timeRange changes
   useEffect(() => {
     if (candleSeriesRef.current && chartRef.current) {
-      const candleData = generateCandlestickData(priceData.price);
+      const candleData = generateCandlestickData(priceData.price, timeRange);
       candleSeriesRef.current.setData(candleData);
 
       if (volumeSeriesRef.current) {
@@ -173,6 +188,8 @@ export function TradingViewChart({ priceData, timeRange }: TradingViewChartProps
         }));
         volumeSeriesRef.current.setData(volumeData);
       }
+
+      chartRef.current.timeScale().fitContent();
     }
   }, [priceData.price, timeRange]);
 

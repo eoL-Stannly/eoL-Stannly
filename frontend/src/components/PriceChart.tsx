@@ -15,25 +15,21 @@ import {
 
 interface PriceChartProps {
   priceData: PriceData;
-  timeRange: '1s' | '5s' | '10s' | '15s' | '30s' | '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '12h' | '1d' | '1w' | '1mo';
+  timeRange: '1m' | '5m' | '15m' | '1h' | '4h' | '12h' | '1d' | '1w' | '1mo';
 }
 
+// Time range configurations for chart data points
+// Each config specifies how many data points to show and the interval between them
 const TIME_RANGE_CONFIG: Record<string, { points: number; intervalMs: number }> = {
-  '1s': { points: 60, intervalMs: 1000 },
-  '5s': { points: 60, intervalMs: 5000 },
-  '10s': { points: 60, intervalMs: 10000 },
-  '15s': { points: 60, intervalMs: 15000 },
-  '30s': { points: 60, intervalMs: 30000 },
-  '1m': { points: 60, intervalMs: 60000 },
-  '5m': { points: 60, intervalMs: 5 * 60000 },
-  '15m': { points: 60, intervalMs: 15 * 60000 },
-  '30m': { points: 60, intervalMs: 30 * 60000 },
-  '1h': { points: 60, intervalMs: 60 * 60000 },
-  '4h': { points: 48, intervalMs: 4 * 60 * 60000 },
-  '12h': { points: 48, intervalMs: 12 * 60 * 60000 },
-  '1d': { points: 48, intervalMs: 24 * 60 * 60000 },
-  '1w': { points: 52, intervalMs: 7 * 24 * 60 * 60000 },
-  '1mo': { points: 30, intervalMs: 30 * 24 * 60 * 60000 },
+  '1m': { points: 60, intervalMs: 1000 },                    // 60 points, 1 sec each = 1 minute
+  '5m': { points: 60, intervalMs: 5 * 1000 },                // 60 points, 5 sec each = 5 minutes
+  '15m': { points: 60, intervalMs: 15 * 1000 },              // 60 points, 15 sec each = 15 minutes
+  '1h': { points: 60, intervalMs: 60 * 1000 },               // 60 points, 1 min each = 1 hour
+  '4h': { points: 48, intervalMs: 5 * 60 * 1000 },           // 48 points, 5 min each = 4 hours
+  '12h': { points: 72, intervalMs: 10 * 60 * 1000 },         // 72 points, 10 min each = 12 hours
+  '1d': { points: 48, intervalMs: 30 * 60 * 1000 },          // 48 points, 30 min each = 1 day
+  '1w': { points: 84, intervalMs: 2 * 60 * 60 * 1000 },      // 84 points, 2 hours each = 1 week
+  '1mo': { points: 60, intervalMs: 12 * 60 * 60 * 1000 },    // 60 points, 12 hours each = 1 month
 };
 
 export function PriceChart({ priceData, timeRange }: PriceChartProps) {
@@ -41,9 +37,10 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
 
   useEffect(() => {
     const config = TIME_RANGE_CONFIG[timeRange];
-    // More volatility for shorter time ranges
-    const volatility = ['1s', '5s', '10s', '15s', '30s'].includes(timeRange) ? 0.005 :
-                       ['1m', '5m', '15m', '30m', '1h'].includes(timeRange) ? 0.01 : 0.03;
+    // More volatility for longer time ranges (larger price swings over time)
+    const volatility = ['1m', '5m', '15m'].includes(timeRange) ? 0.005 :
+                       ['1h', '4h', '12h'].includes(timeRange) ? 0.01 :
+                       ['1d', '1w'].includes(timeRange) ? 0.02 : 0.05;
     setHistory(generateMockHistory(priceData.price, config.points, volatility));
   }, [priceData.price, timeRange]);
 
@@ -59,14 +56,17 @@ export function PriceChart({ priceData, timeRange }: PriceChartProps) {
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    if (['1s', '5s', '10s', '15s', '30s', '1m', '5m', '15m', '30m'].includes(timeRange)) {
+    if (['1m', '5m', '15m'].includes(timeRange)) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    } else if (['1h', '4h', '12h', '1d'].includes(timeRange)) {
+    } else if (['1h', '4h', '12h'].includes(timeRange)) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (timeRange === '1d') {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (timeRange === '1w') {
-      return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+      return date.toLocaleDateString([], { weekday: 'short', day: 'numeric' });
     } else {
-      return date.toLocaleDateString([], { month: 'short' });
+      // '1mo' timeframe
+      return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
     }
   };
 
