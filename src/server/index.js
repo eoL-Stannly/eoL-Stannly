@@ -198,9 +198,10 @@ app.post('/api/knowledge/fetch-url', async (req, res) => {
     const titleMatch = text.match(/<title[^>]*>(.*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
 
-    // Truncate if extremely long
-    if (content.length > 50000) {
-      content = content.slice(0, 50000) + '\n\n[Content truncated]';
+    // Truncate if extremely long (10MB limit)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (content.length > MAX_SIZE) {
+      content = content.slice(0, MAX_SIZE) + '\n\n[Content truncated at 10MB]';
     }
 
     res.json({ title, content, url, contentType });

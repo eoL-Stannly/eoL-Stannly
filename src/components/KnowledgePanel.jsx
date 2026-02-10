@@ -145,6 +145,13 @@ const FILE_TREE = [
 ];
 
 const ACCEPTED_FILE_TYPES = '.pdf,.txt,.md,.csv,.html,.htm,.json,.xml,.doc,.docx,.rtf';
+const MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
 
 function getFileExtIcon(name) {
   if (!name) return '\uD83D\uDCC4';
@@ -304,7 +311,7 @@ export default function KnowledgePanel() {
             content = await readFileAsText(file);
             // If it's binary gibberish, note that
             if (content.includes('%PDF') && content.length < 200) {
-              content = `[PDF file: ${file.name} — ${(file.size / 1024).toFixed(1)}KB. PDF text extraction requires server-side processing. The file has been registered in the knowledge base.]`;
+              content = `[PDF file: ${file.name} — ${formatFileSize(file.size)}. PDF text extraction requires server-side processing. The file has been registered in the knowledge base.]`;
             } else {
               // Try to extract readable text between stream markers
               const textChunks = [];
@@ -319,11 +326,11 @@ export default function KnowledgePanel() {
               } else {
                 // Fallback: extract any readable ASCII runs
                 const readable = content.match(/[\x20-\x7E]{20,}/g);
-                content = readable ? readable.join('\n') : `[PDF file: ${file.name} — binary content, ${(file.size / 1024).toFixed(1)}KB]`;
+                content = readable ? readable.join('\n') : `[PDF file: ${file.name} — binary content, ${formatFileSize(file.size)}]`;
               }
             }
           } catch {
-            content = `[PDF file: ${file.name} — could not extract text, ${(file.size / 1024).toFixed(1)}KB]`;
+            content = `[PDF file: ${file.name} — could not extract text, ${formatFileSize(file.size)}]`;
           }
         } else if (ext === 'csv') {
           const raw = await readFileAsText(file);
@@ -344,9 +351,9 @@ export default function KnowledgePanel() {
           content = await readFileAsText(file);
         }
 
-        // Truncate very large files
-        if (content.length > 100000) {
-          content = content.slice(0, 100000) + '\n\n[Content truncated at 100KB]';
+        // Truncate very large files at 10MB
+        if (content.length > MAX_CONTENT_SIZE) {
+          content = content.slice(0, MAX_CONTENT_SIZE) + '\n\n[Content truncated at 10MB]';
         }
 
         newDocs.push({
@@ -428,8 +435,8 @@ export default function KnowledgePanel() {
         }
       }
 
-      if (content && content.length > 100000) {
-        content = content.slice(0, 100000) + '\n\n[Content truncated at 100KB]';
+      if (content && content.length > MAX_CONTENT_SIZE) {
+        content = content.slice(0, MAX_CONTENT_SIZE) + '\n\n[Content truncated at 10MB]';
       }
 
       const newDoc = {
@@ -456,14 +463,42 @@ export default function KnowledgePanel() {
     setExpandedFolders((prev) => ({ ...prev, [folder]: !prev[folder] }));
   };
 
+  const removeDoc = (id) => {
+    setDocs((prev) => prev.filter((d) => d.id !== id));
+    if (expandedDoc === id) setExpandedDoc(null);
+    if (treeSelectedDoc === id) setTreeSelectedDoc(null);
+  };
+
+  const clearAllDocs = () => {
+    setDocs([]);
+    setExpandedDoc(null);
+    setTreeSelectedDoc(null);
+  };
+
+  const clearSeedDocs = () => {
+    setDocs((prev) => prev.filter((d) => d.source !== 'seed'));
+    setExpandedDoc(null);
+    setTreeSelectedDoc(null);
+  };
+
   const getDocById = (id) => docs.find((d) => d.id === id);
   const getDocsByFolder = (folder) => docs.filter((d) => d.category === folder);
+  const seedCount = docs.filter((d) => d.source === 'seed').length;
+  const importedCount = docs.filter((d) => d.source && d.source !== 'seed').length;
 
   const getSourceBadge = (doc) => {
     if (doc.source === 'upload') return '\uD83D\uDCCE';
     if (doc.source === 'url') return '\uD83C\uDF10';
     if (doc.source === 'manual') return '\u270D';
     return '';
+  };
+
+  const getSourceLabel = (doc) => {
+    if (doc.source === 'upload') return 'Uploaded';
+    if (doc.source === 'url') return 'Web Import';
+    if (doc.source === 'manual') return 'Manual';
+    if (doc.source === 'seed') return 'Built-in';
+    return 'Unknown';
   };
 
   return (
@@ -493,6 +528,12 @@ export default function KnowledgePanel() {
           onClick={() => setView('add')}
         >
           &#10010; Add
+        </button>
+        <button
+          className={`kb-view-tab ${view === 'manage' ? 'kb-view-active' : ''}`}
+          onClick={() => setView('manage')}
+        >
+          &#9881; Manage
         </button>
       </div>
 
@@ -548,7 +589,7 @@ export default function KnowledgePanel() {
                     <span className="kb-meta-tag">&#128194; {doc.category}</span>
                     <span className="kb-meta-tag">&#128100; {doc.owner}</span>
                     {doc.source === 'upload' && doc.fileName && (
-                      <span className="kb-meta-tag">&#128206; {doc.fileName} ({(doc.fileSize / 1024).toFixed(1)}KB)</span>
+                      <span className="kb-meta-tag">&#128206; {doc.fileName} ({formatFileSize(doc.fileSize)})</span>
                     )}
                     {doc.source === 'url' && doc.sourceUrl && (
                       <span className="kb-meta-tag">&#127760; {doc.sourceUrl}</span>
@@ -756,7 +797,7 @@ export default function KnowledgePanel() {
                     <div key={i} className="kb-upload-file-item">
                       <span className="kb-upload-file-icon">{getFileExtIcon(f.name)}</span>
                       <span className="kb-upload-file-name">{f.name}</span>
-                      <span className="kb-upload-file-size">{(f.size / 1024).toFixed(1)}KB</span>
+                      <span className="kb-upload-file-size">{formatFileSize(f.size)}</span>
                     </div>
                   ))}
                   <button
@@ -813,6 +854,77 @@ export default function KnowledgePanel() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ===== MANAGE VIEW ===== */}
+      {view === 'manage' && (
+        <div className="kb-manage-view">
+          <div className="kb-manage-summary">
+            <div className="kb-manage-stat">
+              <span className="kb-manage-num">{docs.length}</span>
+              <span className="kb-manage-label">Total</span>
+            </div>
+            <div className="kb-manage-stat">
+              <span className="kb-manage-num">{seedCount}</span>
+              <span className="kb-manage-label">Built-in</span>
+            </div>
+            <div className="kb-manage-stat">
+              <span className="kb-manage-num">{importedCount}</span>
+              <span className="kb-manage-label">Imported</span>
+            </div>
+          </div>
+
+          <div className="kb-manage-actions">
+            {seedCount > 0 && (
+              <button
+                className="kb-manage-btn kb-manage-btn-warn"
+                onClick={clearSeedDocs}
+              >
+                &#128465; Remove Built-in Docs ({seedCount})
+              </button>
+            )}
+            {docs.length > 0 && (
+              <button
+                className="kb-manage-btn kb-manage-btn-danger"
+                onClick={clearAllDocs}
+              >
+                &#128465; Clear All Documents
+              </button>
+            )}
+          </div>
+
+          <div className="kb-manage-list-header">All Documents</div>
+          <div className="kb-manage-list">
+            {docs.map((doc) => (
+              <div key={doc.id} className="kb-manage-item">
+                <div className="kb-manage-item-info">
+                  <span className="kb-manage-item-badge">
+                    {getSourceBadge(doc) || '\uD83D\uDCD6'}
+                  </span>
+                  <div className="kb-manage-item-text">
+                    <span className="kb-manage-item-title">{doc.title}</span>
+                    <span className="kb-manage-item-detail">
+                      {getSourceLabel(doc)} &middot; {doc.category} &middot; {doc.owner}
+                      {doc.fileName && ` \u00B7 ${doc.fileName}`}
+                      {doc.fileSize && ` (${formatFileSize(doc.fileSize)})`}
+                      {doc.sourceUrl && ` \u00B7 ${doc.sourceUrl}`}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className="kb-manage-remove-btn"
+                  onClick={() => removeDoc(doc.id)}
+                  title="Remove document"
+                >
+                  &#10005;
+                </button>
+              </div>
+            ))}
+            {docs.length === 0 && (
+              <div className="kb-empty">Knowledge base is empty. Use the Add tab to import content.</div>
+            )}
+          </div>
         </div>
       )}
     </div>
