@@ -1465,6 +1465,172 @@ body {
 }
 
 .kb-form-submit:hover { opacity: 0.85; }
+.kb-form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---- KB Add Mode Tabs ---- */
+.kb-add-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.kb-add-mode-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.kb-add-mode-tab {
+  flex: 1;
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  padding: 4px 3px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.kb-add-mode-tab:hover { color: var(--text-light); }
+
+.kb-add-mode-tab.kb-add-mode-active {
+  color: var(--gold);
+  background: rgba(240,192,64,0.12);
+  border: 1px solid rgba(240,192,64,0.25);
+}
+
+/* ---- KB Drop Zone (File Upload) ---- */
+.kb-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kb-drop-zone {
+  border: 2px dashed var(--panel-border);
+  border-radius: 4px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(255,255,255,0.02);
+}
+
+.kb-drop-zone:hover {
+  border-color: var(--gold);
+  background: rgba(240,192,64,0.04);
+}
+
+.kb-drop-icon { font-size: 24px; margin-bottom: 6px; opacity: 0.6; }
+
+.kb-drop-text {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 4px;
+}
+
+.kb-drop-formats {
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.kb-file-input-hidden { display: none; }
+
+/* Upload file list */
+.kb-upload-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kb-upload-file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: #2a2520;
+  border-radius: 2px;
+  border-left: 2px solid var(--gold);
+}
+
+.kb-upload-file-icon { font-size: 12px; }
+
+.kb-upload-file-name {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10px;
+  color: var(--text-light);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-upload-file-size {
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+/* ---- KB URL Section ---- */
+.kb-url-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kb-url-hint {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 9px;
+  color: var(--text-dim);
+  line-height: 1.4;
+  opacity: 0.7;
+}
+
+/* ---- KB Status Messages ---- */
+.kb-status-msg {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.kb-status-done {
+  background: rgba(76,175,80,0.12);
+  color: var(--green);
+  border: 1px solid rgba(76,175,80,0.25);
+}
+
+.kb-status-error {
+  background: rgba(231,76,60,0.12);
+  color: var(--red);
+  border: 1px solid rgba(231,76,60,0.25);
+}
+
+.kb-status-processing,
+.kb-status-fetching {
+  background: rgba(240,192,64,0.12);
+  color: var(--gold);
+  border: 1px solid rgba(240,192,64,0.25);
+}
+
+/* ---- KB Source Badge ---- */
+.kb-source-badge {
+  font-size: 8px;
+  margin-right: 2px;
+}
 
 /* ---- Scrollbar ---- */
 ::-webkit-scrollbar { width: 6px; }

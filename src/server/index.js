@@ -139,6 +139,76 @@ app.delete('/api/knowledge/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// Fetch a URL and convert to markdown-ish text
+app.post('/api/knowledge/fetch-url', async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'URL required' });
+
+  try {
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'AGI-HQ-KnowledgeBot/1.0' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!resp.ok) return res.status(502).json({ error: `Fetch failed: ${resp.status} ${resp.statusText}` });
+
+    const contentType = resp.headers.get('content-type') || '';
+    const text = await resp.text();
+
+    // Strip HTML tags to get readable text
+    let content = text;
+    if (contentType.includes('html')) {
+      // Remove script/style blocks, then strip tags
+      content = content
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+        .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+        .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '');
+
+      // Convert common elements to markdown
+      content = content
+        .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n')
+        .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n')
+        .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n')
+        .replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n')
+        .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+        .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+        .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+        .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+        .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+        .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*');
+
+      // Strip remaining tags
+      content = content.replace(/<[^>]+>/g, '');
+      // Clean up whitespace
+      content = content
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+
+    // Extract title from URL or content
+    const titleMatch = text.match(/<title[^>]*>(.*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
+
+    // Truncate if extremely long
+    if (content.length > 50000) {
+      content = content.slice(0, 50000) + '\n\n[Content truncated]';
+    }
+
+    res.json({ title, content, url, contentType });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch URL' });
+  }
+});
+
 // ---- Ralph Status ----
 
 function getRalphStatus() {
