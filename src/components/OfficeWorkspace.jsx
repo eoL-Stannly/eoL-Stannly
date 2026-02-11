@@ -6,6 +6,12 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
 
   return (
     <div className="game-office">
+      {/* Ayima Logo Bar */}
+      <div className="ayima-logo-bar">
+        <img src="/assets/ayima-logo.svg" alt="Ayima" className="ayima-logo" />
+        <span className="ayima-logo-text">AGI HQ</span>
+      </div>
+
       {/* Top decoration shelf */}
       <div className="office-shelf">
         <div className="shelf-item shelf-drinks">
@@ -45,53 +51,148 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
         <span className="sparkle-icon">&#10024;</span>
       </div>
 
-      {/* The brick floor with agents */}
+      {/* The campus floor */}
       <div className="office-floor">
-        {/* Decorations */}
-        <div className="floor-plant" style={{ bottom: 12, right: 30 }}>&#127793;</div>
-        <div className="floor-plant" style={{ top: 12, left: 20 }}>&#127811;</div>
+        <div className="office-zones">
+          {/* Row 1: Main office + Meeting Room */}
+          <div className="office-zone-row">
+            {/* Main open-plan office */}
+            <div className="zone-main">
+              <div className="zone-label">Open Plan Office</div>
+              <div style={{ position: 'relative' }}>
+                {/* Floor decorations */}
+                <div className="floor-plant" style={{ position: 'absolute', bottom: 8, right: 20, zIndex: 1 }}>&#127793;</div>
+                <div className="floor-plant" style={{ position: 'absolute', top: 8, left: 12, zIndex: 1 }}>&#127811;</div>
 
-        {/* Water Cooler Area */}
-        <div className="water-cooler-area">
-          <div className="water-cooler">
-            <div className="wc-bottle"></div>
-            <div className="wc-base"></div>
-            <div className="wc-label">&#128167;</div>
-          </div>
-          {waterCoolerAgents.length > 0 && (
-            <div className="wc-agents">
-              {waterCoolerAgents.map((agent) => (
-                <div key={agent.id} className="wc-agent-mini">
-                  <div className="wc-mini-char">
-                    {agent.speechBubble && (
-                      <div className="speech-bubble speech-bubble-wc">
-                        {agent.speechBubble}
-                      </div>
-                    )}
-                    <div className={`ch-hair ${agent.longHair ? 'ch-hair-long' : ''}`} style={{ background: agent.hairColor }}></div>
-                    <div className="ch-head" style={{ background: agent.skinTone }}>
-                      <div className="ch-eye ch-eye-l"></div>
-                      <div className="ch-eye ch-eye-r"></div>
-                    </div>
-                    <div className="ch-body" style={{ background: agent.shirtColor }}></div>
+                {/* Water Cooler Area */}
+                <div className="water-cooler-area">
+                  <div className="water-cooler">
+                    <div className="wc-bottle"></div>
+                    <div className="wc-base"></div>
+                    <div className="wc-label">&#128167;</div>
                   </div>
-                  <div className="wc-name">{agent.name}</div>
+                  {waterCoolerAgents.length > 0 && (
+                    <div className="wc-agents">
+                      {waterCoolerAgents.map((agent) => (
+                        <div key={agent.id} className="wc-agent-mini">
+                          <div className="wc-mini-char">
+                            {agent.speechBubble && (
+                              <div className="speech-bubble speech-bubble-wc">
+                                {agent.speechBubble}
+                              </div>
+                            )}
+                            <div className={`ch-hair ${agent.longHair ? 'ch-hair-long' : ''}`} style={{ background: agent.hairColor }}></div>
+                            <div className="ch-head" style={{ background: agent.skinTone }}>
+                              <div className="ch-eye ch-eye-l"></div>
+                              <div className="ch-eye ch-eye-r"></div>
+                            </div>
+                            <div className="ch-body" style={{ background: agent.shirtColor }}></div>
+                          </div>
+                          <div className="wc-name">{agent.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Agent grid */}
-        <div className="agent-grid">
-          {agents.map((agent) => (
-            <AgentStation
-              key={agent.id}
-              agent={agent}
-              isSelected={selectedAgent === agent.id}
-              onClick={() => onSelectAgent(agent.id === selectedAgent ? null : agent.id)}
-            />
-          ))}
+                {/* Agent grid */}
+                <div className="agent-grid">
+                  {agents.map((agent) => (
+                    <AgentStation
+                      key={agent.id}
+                      agent={agent}
+                      isSelected={selectedAgent === agent.id}
+                      onClick={() => onSelectAgent(agent.id === selectedAgent ? null : agent.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Meeting Rooms */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="zone-meeting">
+                <div className="zone-label">Meeting Room A</div>
+                <div className="meeting-table">
+                  <div className="meeting-screen">
+                    <div className="meeting-screen-glow"></div>
+                  </div>
+                  <div className="meeting-surface"></div>
+                  <div className="meeting-chairs">
+                    <div className="meeting-chair"></div>
+                    <div className="meeting-chair"></div>
+                    <div className="meeting-chair"></div>
+                    <div className="meeting-chair"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="zone-meeting">
+                <div className="zone-label">Meeting Room B</div>
+                <div className="meeting-table">
+                  <div className="meeting-screen">
+                    <div className="meeting-screen-glow"></div>
+                  </div>
+                  <div className="meeting-surface"></div>
+                  <div className="meeting-chairs">
+                    <div className="meeting-chair"></div>
+                    <div className="meeting-chair"></div>
+                    <div className="meeting-chair"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Breakout Area + Garden */}
+          <div className="office-zone-row">
+            <div className="zone-breakout">
+              <div className="zone-label">Breakout Area</div>
+              <div className="breakout-items">
+                <div className="breakout-couch"></div>
+                <div className="breakout-table"></div>
+                <div className="breakout-couch"></div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span className="breakout-emoji">&#9749;</span>
+                  <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 5, color: 'rgba(12,53,71,0.5)' }}>COFFEE</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span className="breakout-emoji">&#127918;</span>
+                  <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 5, color: 'rgba(12,53,71,0.5)' }}>GAMES</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="zone-garden">
+              <div className="zone-label" style={{ color: '#2E7D32', background: 'rgba(46,125,50,0.12)' }}>Outside Garden</div>
+              <div className="garden-path"></div>
+              <div className="garden-items">
+                <div className="garden-item">
+                  <span className="garden-emoji">&#127794;</span>
+                </div>
+                <div className="garden-item">
+                  <span className="garden-emoji-sm">&#127800;</span>
+                  <span className="garden-emoji-sm">&#127799;</span>
+                </div>
+                <div className="garden-item">
+                  <div className="garden-bench"></div>
+                </div>
+                <div className="garden-item">
+                  <span className="garden-emoji-sm">&#127807;</span>
+                  <span className="garden-emoji">&#127795;</span>
+                </div>
+                <div className="garden-item">
+                  <span className="garden-emoji-sm">&#127804;</span>
+                  <span className="garden-emoji-sm">&#127803;</span>
+                </div>
+                <div className="garden-item">
+                  <div className="garden-bench"></div>
+                </div>
+                <div className="garden-item">
+                  <span className="garden-emoji">&#127796;</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -5,6 +5,17 @@ import TaskPanel from './components/TaskPanel.jsx';
 import KnowledgePanel from './components/KnowledgePanel.jsx';
 import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 
+const SEO_TASK_BUTTONS = [
+  { label: 'Keyword Research', desc: 'Research and analyse target keywords for SEO campaigns' },
+  { label: 'Content Production', desc: 'Create and optimise SEO content based on keyword research' },
+  { label: 'Redirect Mapping', desc: 'Map redirect rules for site migrations and URL changes' },
+  { label: 'Performance Analysis', desc: 'Analyse site performance metrics and Core Web Vitals' },
+  { label: 'Technical Auditing', desc: 'Run comprehensive technical SEO audit of the site' },
+  { label: 'Internal Linking', desc: 'Analyse and optimise internal link structure' },
+  { label: 'HREFLANG Mapping', desc: 'Map hreflang tags for international SEO targeting' },
+  { label: 'Sitemap Production', desc: 'Generate and validate XML sitemaps for the site' },
+];
+
 const IDLE_CHATTER = [
   "Have you seen the latest algo update?",
   "Core Web Vitals looking good today",
@@ -326,6 +337,20 @@ export default function App() {
             <span>Loop: {ralphStatus.loopCount}</span>
             <span>Active: {agents.filter((a) => a.state !== AGENT_STATES.IDLE).length}/{agents.length}</span>
           </div>
+        </div>
+
+        {/* SEO Task Quick Actions */}
+        <div className="seo-task-buttons">
+          {SEO_TASK_BUTTONS.map((btn) => (
+            <button
+              key={btn.label}
+              className="seo-task-btn"
+              title={btn.desc}
+              onClick={() => submitTask(btn.desc)}
+            >
+              {btn.label}
+            </button>
+          ))}
         </div>
 
         <div className="right-tabs">
