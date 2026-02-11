@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AGENTS } from '../agents/AgentDefinitions.js';
 
 export default function TaskPanel({ tasks, onSubmitTask }) {
   const [input, setInput] = useState('');
   const [expandedTask, setExpandedTask] = useState(null);
+  const prevTasksRef = useRef(tasks);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -12,6 +13,19 @@ export default function TaskPanel({ tasks, onSubmitTask }) {
       setInput('');
     }
   };
+
+  // Auto-expand tasks when they complete with a result
+  useEffect(() => {
+    const prev = prevTasksRef.current;
+    for (const task of tasks) {
+      const prevTask = prev.find((t) => t.id === task.id);
+      if (task.status === 'completed' && task.result && (!prevTask || prevTask.status !== 'completed')) {
+        setExpandedTask(task.id);
+        break;
+      }
+    }
+    prevTasksRef.current = tasks;
+  }, [tasks]);
 
   const getAgentName = (agentId) => {
     const agent = AGENTS.find((a) => a.id === agentId);
@@ -59,27 +73,20 @@ export default function TaskPanel({ tasks, onSubmitTask }) {
                       {new Date(task.createdAt).toLocaleTimeString()}
                     </span>
                     {task.result && (
-                      <span className="task-has-result">View Result</span>
+                      <span className="task-has-result">{expandedTask === task.id ? 'Hide' : 'View Result'}</span>
                     )}
                   </div>
                 </div>
               </div>
 
+              {/* Progress bar — always visible on active tasks */}
+              {(task.status === 'pending' || task.status === 'in_progress') && (
+                <TaskProgress task={task} />
+              )}
+
               {/* Expanded result view */}
               {expandedTask === task.id && task.result && (
                 <TaskResult result={task.result} />
-              )}
-
-              {/* In-progress indicator */}
-              {expandedTask === task.id && task.status === 'in_progress' && !task.result && (
-                <div className="task-working">
-                  <div className="task-working-dots">
-                    <span>.</span><span>.</span><span>.</span>
-                  </div>
-                  <div className="task-working-text">
-                    {task.assignedTo ? `${getAgentName(task.assignedTo)} is working on this...` : 'Processing...'}
-                  </div>
-                </div>
               )}
             </div>
           ))
@@ -89,12 +96,57 @@ export default function TaskPanel({ tasks, onSubmitTask }) {
   );
 }
 
+function TaskProgress({ task }) {
+  const progress = task.progress || {};
+  const percent = progress.percent || (task.status === 'pending' ? 5 : 10);
+  const stageText = progress.stageText || (task.status === 'pending' ? 'Queued — waiting for triage...' : 'Processing...');
+  const stage = progress.stage || 'queued';
+
+  return (
+    <div className="task-progress">
+      <div className="task-progress-bar-track">
+        <div
+          className={`task-progress-bar-fill stage-${stage}`}
+          style={{ width: `${percent}%` }}
+        ></div>
+      </div>
+      <div className="task-progress-info">
+        <span className="task-progress-text">{stageText}</span>
+        <span className="task-progress-pct">{Math.round(percent)}%</span>
+      </div>
+      {/* Stage indicators */}
+      <div className="task-progress-stages">
+        <ProgressStage label="Triage" active={stage === 'triaging'} done={stageIsDone('triaging', stage)} />
+        <ProgressStage label="Assign" active={stage === 'delegating'} done={stageIsDone('delegating', stage)} />
+        <ProgressStage label="KB Search" active={stage === 'searching_kb'} done={stageIsDone('searching_kb', stage)} />
+        <ProgressStage label="Working" active={stage === 'working'} done={stageIsDone('working', stage)} />
+        <ProgressStage label="Done" active={stage === 'completing'} done={stage === 'completing'} />
+      </div>
+    </div>
+  );
+}
+
+const STAGE_ORDER = ['queued', 'triaging', 'delegating', 'searching_kb', 'working', 'completing'];
+
+function stageIsDone(checkStage, currentStage) {
+  return STAGE_ORDER.indexOf(currentStage) > STAGE_ORDER.indexOf(checkStage);
+}
+
+function ProgressStage({ label, active, done }) {
+  const cls = done ? 'progress-stage done' : active ? 'progress-stage active' : 'progress-stage';
+  return (
+    <div className={cls}>
+      <div className="progress-stage-dot"></div>
+      <span className="progress-stage-label">{label}</span>
+    </div>
+  );
+}
+
 function TaskResult({ result }) {
   if (!result) return null;
 
   return (
     <div className="task-result">
-      {/* Header */}
       <div className="task-result-header">
         <div className="task-result-type">{result.deliverableType || 'Task Output'}</div>
         {result.agentName && (
@@ -102,12 +154,10 @@ function TaskResult({ result }) {
         )}
       </div>
 
-      {/* Summary */}
       {result.summary && (
         <div className="task-result-summary">{result.summary}</div>
       )}
 
-      {/* KB Context */}
       {result.kbDocumentsUsed && result.kbDocumentsUsed.length > 0 && (
         <div className="task-result-kb">
           <span className="task-result-kb-icon">📚</span>
@@ -115,7 +165,6 @@ function TaskResult({ result }) {
         </div>
       )}
 
-      {/* Sections */}
       {result.sections && result.sections.map((section, si) => (
         <div key={si} className="task-result-section">
           <div className="task-result-section-heading">{section.heading}</div>
@@ -127,7 +176,6 @@ function TaskResult({ result }) {
         </div>
       ))}
 
-      {/* Recommendations */}
       {result.recommendations && result.recommendations.length > 0 && (
         <div className="task-result-section">
           <div className="task-result-section-heading">Recommendations</div>
@@ -143,12 +191,10 @@ function TaskResult({ result }) {
         </div>
       )}
 
-      {/* KB Context note */}
       {result.kbContext && (
         <div className="task-result-kb-note">{result.kbContext}</div>
       )}
 
-      {/* Timestamp */}
       {result.timestamp && (
         <div className="task-result-time">
           Completed: {new Date(result.timestamp).toLocaleString()}

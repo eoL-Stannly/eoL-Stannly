@@ -927,16 +927,12 @@ body {
 
 .task-item {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
   padding: 5px 6px;
   background: var(--ayima-dark);
   border-radius: 2px;
   border-left: 3px solid var(--text-dim);
-  align-items: flex-start;
-}
-
-.task-item {
-  flex-direction: column;
 }
 
 .task-item-header {
@@ -979,34 +975,121 @@ body {
   text-decoration: underline;
 }
 
-/* ---- Task Working Indicator ---- */
-.task-working {
-  padding: 8px;
-  text-align: center;
+/* ---- Task Progress Bar ---- */
+.task-progress {
+  padding: 6px 4px 4px;
 }
 
-.task-working-dots {
-  font-size: 14px;
+.task-progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(9, 30, 42, 0.8);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+}
+
+.task-progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease-out;
+  background: var(--ayima-accent);
+  position: relative;
+}
+
+.task-progress-bar-fill.stage-queued { background: var(--text-dim); }
+.task-progress-bar-fill.stage-triaging { background: #ffa726; }
+.task-progress-bar-fill.stage-delegating { background: #64b5f6; }
+.task-progress-bar-fill.stage-searching_kb { background: #ab47bc; }
+.task-progress-bar-fill.stage-working {
+  background: linear-gradient(90deg, #4caf50, var(--ayima-accent));
+  animation: progress-pulse 1.5s ease-in-out infinite;
+}
+.task-progress-bar-fill.stage-completing { background: var(--green); }
+
+@keyframes progress-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.task-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3px;
+}
+
+.task-progress-text {
+  font-family: var(--pixel-font);
+  font-size: 5px;
   color: var(--ayima-accent);
-  animation: pulse-dots 1.5s infinite;
+  animation: text-blink 2s ease-in-out infinite;
 }
 
-.task-working-dots span {
-  animation: blink-dot 1.5s infinite;
-}
-.task-working-dots span:nth-child(2) { animation-delay: 0.3s; }
-.task-working-dots span:nth-child(3) { animation-delay: 0.6s; }
-
-@keyframes blink-dot {
-  0%, 60%, 100% { opacity: 0.2; }
-  30% { opacity: 1; }
+@keyframes text-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-.task-working-text {
+.task-progress-pct {
   font-family: var(--pixel-font);
   font-size: 5px;
   color: var(--text-dim);
+}
+
+/* Stage indicators */
+.task-progress-stages {
+  display: flex;
+  justify-content: space-between;
   margin-top: 4px;
+  padding: 0 2px;
+}
+
+.progress-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.progress-stage-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(9, 30, 42, 0.8);
+  border: 1px solid var(--panel-border);
+  transition: all 0.3s;
+}
+
+.progress-stage.active .progress-stage-dot {
+  background: var(--ayima-accent);
+  border-color: var(--ayima-accent);
+  box-shadow: 0 0 6px var(--ayima-accent);
+  animation: dot-pulse 1s ease-in-out infinite;
+}
+
+.progress-stage.done .progress-stage-dot {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 4px var(--ayima-accent); }
+  50% { box-shadow: 0 0 10px var(--ayima-accent); }
+}
+
+.progress-stage-label {
+  font-family: var(--pixel-font);
+  font-size: 4px;
+  color: var(--text-dim);
+}
+
+.progress-stage.active .progress-stage-label {
+  color: var(--ayima-accent);
+}
+
+.progress-stage.done .progress-stage-label {
+  color: var(--green);
 }
 
 /* ---- Task Result Display ---- */

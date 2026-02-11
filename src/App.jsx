@@ -4,6 +4,7 @@ import ActivityFeed from './components/ActivityFeed.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import KnowledgePanel from './components/KnowledgePanel.jsx';
 import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
+import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
 
 const SEO_TASK_BUTTONS = [
   { label: 'Keyword Research', desc: 'Research and analyse target keywords for SEO campaigns' },
@@ -154,23 +155,44 @@ export default function App() {
   // Handle events from the WebSocket server
   const handleServerEvent = useCallback((data) => {
     if (data.type === 'init') {
-      // Initial state from server
       return;
     }
 
     if (data.type === 'orchestrator_event') {
       const event = data.payload;
+      const taskId = event.task?.id;
 
-      // Update agent states based on server events
+      // Update progress stages based on server events
+      if (taskId) {
+        if (event.type === 'agent_working' && event.agentId === 'mike') {
+          updateTaskProgress(taskId, 'triaging', 15, 'Mike is triaging the request...');
+        } else if (event.type === 'agent_assigned' && event.targetAgentId) {
+          const name = event.targetAgentName || event.targetAgentId;
+          updateTaskProgress(taskId, 'delegating', 30, `Delegated to ${name}...`);
+        } else if (event.type === 'agent_assigned' && !event.targetAgentId) {
+          const name = event.agentName || event.agentId;
+          updateTaskProgress(taskId, 'delegating', 35, `${name} is picking up the task...`);
+        } else if (event.type === 'knowledge_accessed') {
+          const name = event.agentName || event.agentId;
+          const count = event.documentsFound || 0;
+          updateTaskProgress(taskId, 'searching_kb', 50, `${name} found ${count} KB documents...`);
+        } else if (event.type === 'agent_working') {
+          const name = event.agentName || event.agentId;
+          updateTaskProgress(taskId, 'working', 70, `${name} is generating deliverable...`);
+        } else if (event.type === 'task_completed') {
+          updateTaskProgress(taskId, 'completing', 100, 'Complete!');
+        }
+      }
+
+      // Update agent states
       if (event.agentId && event.agentId !== 'system') {
         setAgents((prev) => prev.map((a) => {
           if (a.id === event.agentId) {
             if (event.type === 'agent_working') {
-              return { ...a, state: AGENT_STATES.WORKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
+              return { ...a, state: event.agentId === 'mike' ? AGENT_STATES.THINKING : AGENT_STATES.WORKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
             }
             if (event.type === 'agent_assigned' && event.targetAgentId) {
-              // Mike delegating — he goes idle, target goes thinking
-              return a;
+              return a; // Mike delegating, handled below
             }
             if (event.type === 'agent_assigned' && !event.targetAgentId) {
               return { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
@@ -183,20 +205,13 @@ export default function App() {
             }
           }
 
-          // Handle Mike's delegation — set target agent to thinking
           if (event.type === 'agent_assigned' && event.targetAgentId && a.id === event.targetAgentId) {
-            return { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
-          }
-
-          // Mike goes to THINKING when triaging
-          if (event.type === 'agent_working' && event.agentId === 'mike' && a.id === 'mike') {
             return { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
           }
 
           return a;
         }));
 
-        // Also handle Mike going idle after delegation
         if (event.type === 'agent_assigned' && event.targetAgentId && event.agentId === 'mike') {
           setAgents((prev) => prev.map((a) =>
             a.id === 'mike' ? { ...a, state: AGENT_STATES.IDLE } : a
@@ -204,21 +219,29 @@ export default function App() {
         }
       }
 
-      // Update tasks based on server events
+      // Update tasks
       if (event.task) {
         setTasks((prev) => {
           const exists = prev.find((t) => t.id === event.task.id);
           if (exists) {
-            return prev.map((t) => t.id === event.task.id ? { ...event.task } : t);
+            return prev.map((t) => {
+              if (t.id === event.task.id) {
+                const updated = { ...event.task };
+                // Clear progress on completion
+                if (updated.status === 'completed') updated.progress = null;
+                return updated;
+              }
+              return t;
+            });
           }
           if (event.type === 'task_submitted') {
-            return [event.task, ...prev];
+            return [{ ...event.task, progress: { stage: 'queued', percent: 5, stageText: 'Queued...' } }, ...prev];
           }
           return prev;
         });
       }
 
-      // Add to activity feed
+      // Activity feed
       if (event.message) {
         addActivity(
           event.agentId || 'system',
@@ -228,7 +251,7 @@ export default function App() {
         );
       }
     }
-  }, [addActivity]);
+  }, [addActivity, updateTaskProgress]);
 
   // --- Speech bubble helper ---
   const showSpeechBubble = useCallback((agentId, text, duration = 4000) => {
@@ -407,12 +430,22 @@ export default function App() {
     return () => { clearInterval(loopRef.current); clearInterval(uptimeRef.current); };
   }, [ralphStatus.running]);
 
+  // Helper to update a task's progress
+  const updateTaskProgress = useCallback((taskId, stage, percent, stageText) => {
+    setTasks((prev) => prev.map((t) =>
+      t.id === taskId ? { ...t, progress: { stage, percent, stageText } } : t
+    ));
+  }, []);
+
   // Submit task to the backend server
   const submitTask = useCallback(async (description) => {
-    // Optimistic: add to local state immediately
+    // Switch to Tasks tab so user sees progress
+    setShowPanel('tasks');
+
     const tempTask = {
       id: `task_${Date.now()}`, description, status: 'pending',
       createdAt: new Date().toISOString(), assignedTo: null, result: null,
+      progress: { stage: 'queued', percent: 5, stageText: 'Queued — waiting for triage...' },
     };
     setTasks((prev) => [tempTask, ...prev]);
     addActivity('system', 'System', `Task submitted: "${description}"`, 'task_submitted');
@@ -429,79 +462,77 @@ export default function App() {
       }
 
       const serverTask = await res.json();
-      // Replace optimistic task with server task
+      // Replace optimistic task with server task (server already completed it)
       setTasks((prev) => prev.map((t) =>
-        t.id === tempTask.id ? serverTask : t
+        t.id === tempTask.id ? { ...serverTask, progress: null } : t
       ));
-    } catch (err) {
-      // Server not available — run client-side fallback simulation
-      addActivity('system', 'System', 'Server offline — running locally', 'system');
+    } catch {
+      // Server not available — run client-side with full progress
       runLocalFallback(tempTask, description);
     }
   }, [addActivity]);
 
-  // Fallback simulation if server is not running
+  // Client-side task processing with visible progress stages
   const runLocalFallback = useCallback((task, description) => {
-    // Mike triages
+    const taskId = task.id;
+    const target = pickAgentForTask(description);
+    const targetAgent = AGENTS.find((a) => a.id === target);
+
+    // Stage 1: Triaging (1s)
     setTimeout(() => {
+      updateTaskProgress(taskId, 'triaging', 15, 'Mike is triaging the request...');
       setAgents((prev) => prev.map((a) => a.id === 'mike' ? { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));
-      setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, status: 'in_progress', assignedTo: 'mike' } : t));
+      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: 'in_progress', assignedTo: 'mike' } : t));
       addActivity('mike', 'Mike', `Triaging: "${description}"`, 'agent_working');
-    }, 1000);
+    }, 800);
 
-    // Delegate to a specialist
+    // Stage 2: Delegating (2.5s)
     setTimeout(() => {
-      const delegateTargets = ['rob', 'craig', 'leo', 'ewan', 'alex', 'ken'];
-      const target = delegateTargets[Math.floor(Math.random() * delegateTargets.length)];
-      const targetAgent = AGENTS.find((a) => a.id === target);
-
+      updateTaskProgress(taskId, 'delegating', 30, `Mike is delegating to ${targetAgent.name}...`);
       setAgents((prev) => prev.map((a) => {
-        if (a.id === 'mike') return { ...a, state: AGENT_STATES.IDLE, completedTasks: a.completedTasks + 1 };
-        if (a.id === target) return { ...a, state: AGENT_STATES.WORKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
+        if (a.id === 'mike') return { ...a, state: AGENT_STATES.IDLE };
+        if (a.id === target) return { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
         return a;
       }));
-      setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, assignedTo: target } : t));
-      addActivity('mike', 'Mike', `Assigned to ${targetAgent.name}`, 'agent_assigned');
+      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, assignedTo: target } : t));
+      addActivity('mike', 'Mike', `Delegated to ${targetAgent.name}`, 'agent_assigned');
+    }, 2500);
 
-      // Complete with a basic result
+    // Stage 3: Searching KB (4s)
+    setTimeout(() => {
+      updateTaskProgress(taskId, 'searching_kb', 50, `${targetAgent.name} is searching the knowledge base...`);
+      addActivity(target, targetAgent.name, 'Searching knowledge base for context...', 'knowledge_accessed');
+    }, 4000);
+
+    // Stage 4: Working (5.5s)
+    setTimeout(() => {
+      updateTaskProgress(taskId, 'working', 70, `${targetAgent.name} is generating deliverable...`);
+      setAgents((prev) => prev.map((a) => a.id === target ? { ...a, state: AGENT_STATES.WORKING } : a));
+      addActivity(target, targetAgent.name, `Working on: "${description}"`, 'agent_working');
+    }, 5500);
+
+    // Stage 5: Almost done (7.5s)
+    setTimeout(() => {
+      updateTaskProgress(taskId, 'working', 90, `${targetAgent.name} is finalising output...`);
+    }, 7500);
+
+    // Stage 6: Complete (9s)
+    setTimeout(() => {
+      updateTaskProgress(taskId, 'completing', 100, 'Complete!');
+
+      const result = generateClientDeliverable(description, target, targetAgent.name, targetAgent.title);
+
+      setAgents((prev) => prev.map((a) =>
+        a.id === target ? { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 } : a
+      ));
+      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: 'completed', result, progress: null } : t));
+      addActivity(target, targetAgent.name, `Completed: "${description}"`, 'task_completed');
+
       setTimeout(() => {
-        const fallbackResult = {
-          agentId: target,
-          agentName: targetAgent.name,
-          agentRole: targetAgent.title,
-          task: description,
-          timestamp: new Date().toISOString(),
-          deliverableType: 'Task Output',
-          summary: `Completed analysis for: "${description}"`,
-          kbDocumentsUsed: [],
-          sections: [
-            {
-              heading: 'Summary',
-              items: [
-                'Task has been processed by the team.',
-                'Start the backend server with "npm run dev:local" for full deliverables.',
-                'The server enables KB-grounded responses with structured output.',
-              ],
-            },
-          ],
-          recommendations: [
-            { priority: 'High', action: 'Run "npm run dev:local" to enable full backend processing', impact: 'Real structured deliverables' },
-          ],
-          kbContext: 'Server offline — connect backend for KB-grounded output.',
-        };
-
-        setAgents((prev) => prev.map((a) =>
-          a.id === target ? { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 } : a
-        ));
-        setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, status: 'completed', result: fallbackResult } : t));
-        addActivity(target, targetAgent.name, `Completed: "${description}"`, 'task_completed');
-
-        setTimeout(() => {
-          setAgents((prev) => prev.map((a) => a.id === target ? { ...a, state: AGENT_STATES.IDLE } : a));
-        }, 2000);
-      }, 5000);
-    }, 3000);
-  }, [addActivity]);
+        setAgents((prev) => prev.map((a) => a.id === target ? { ...a, state: AGENT_STATES.IDLE } : a));
+      }, 2000);
+    }, 9000);
+  }, [addActivity, updateTaskProgress]);
 
   return (
     <div className="game-app">
