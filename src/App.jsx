@@ -66,6 +66,9 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Determine server base URL (same origin in production, or localhost:3001 in dev)
+const SERVER_BASE = '';
+
 export default function App() {
   const [agents, setAgents] = useState(
     AGENTS.map((a) => ({
@@ -85,15 +88,147 @@ export default function App() {
   });
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showPanel, setShowPanel] = useState('tasks');
+  const [serverConnected, setServerConnected] = useState(false);
   const loopRef = useRef(null);
   const uptimeRef = useRef(null);
   const idleLoopRef = useRef(null);
+  const wsRef = useRef(null);
 
   const addActivity = useCallback((agentId, agentName, message, type) => {
     setActivities((prev) => [{
       agentId, agentName, message, type, timestamp: new Date().toISOString(),
     }, ...prev].slice(0, 100));
   }, []);
+
+  // --- WebSocket connection to backend ---
+  useEffect(() => {
+    let ws;
+    let reconnectTimer;
+
+    const connect = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+      try {
+        ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          setServerConnected(true);
+          addActivity('system', 'System', 'Connected to server', 'system');
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleServerEvent(data);
+          } catch {
+            // ignore parse errors
+          }
+        };
+
+        ws.onclose = () => {
+          setServerConnected(false);
+          wsRef.current = null;
+          // Try to reconnect after 3 seconds
+          reconnectTimer = setTimeout(connect, 3000);
+        };
+
+        ws.onerror = () => {
+          // Will trigger onclose
+        };
+      } catch {
+        // Server not available, retry
+        reconnectTimer = setTimeout(connect, 3000);
+      }
+    };
+
+    connect();
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (ws) ws.close();
+    };
+  }, []);
+
+  // Handle events from the WebSocket server
+  const handleServerEvent = useCallback((data) => {
+    if (data.type === 'init') {
+      // Initial state from server
+      return;
+    }
+
+    if (data.type === 'orchestrator_event') {
+      const event = data.payload;
+
+      // Update agent states based on server events
+      if (event.agentId && event.agentId !== 'system') {
+        setAgents((prev) => prev.map((a) => {
+          if (a.id === event.agentId) {
+            if (event.type === 'agent_working') {
+              return { ...a, state: AGENT_STATES.WORKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
+            }
+            if (event.type === 'agent_assigned' && event.targetAgentId) {
+              // Mike delegating — he goes idle, target goes thinking
+              return a;
+            }
+            if (event.type === 'agent_assigned' && !event.targetAgentId) {
+              return { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
+            }
+            if (event.type === 'task_completed') {
+              return { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 };
+            }
+            if (event.type === 'agent_idle') {
+              return { ...a, state: AGENT_STATES.IDLE, currentTask: null };
+            }
+          }
+
+          // Handle Mike's delegation — set target agent to thinking
+          if (event.type === 'agent_assigned' && event.targetAgentId && a.id === event.targetAgentId) {
+            return { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
+          }
+
+          // Mike goes to THINKING when triaging
+          if (event.type === 'agent_working' && event.agentId === 'mike' && a.id === 'mike') {
+            return { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null };
+          }
+
+          return a;
+        }));
+
+        // Also handle Mike going idle after delegation
+        if (event.type === 'agent_assigned' && event.targetAgentId && event.agentId === 'mike') {
+          setAgents((prev) => prev.map((a) =>
+            a.id === 'mike' ? { ...a, state: AGENT_STATES.IDLE } : a
+          ));
+        }
+      }
+
+      // Update tasks based on server events
+      if (event.task) {
+        setTasks((prev) => {
+          const exists = prev.find((t) => t.id === event.task.id);
+          if (exists) {
+            return prev.map((t) => t.id === event.task.id ? { ...event.task } : t);
+          }
+          if (event.type === 'task_submitted') {
+            return [event.task, ...prev];
+          }
+          return prev;
+        });
+      }
+
+      // Add to activity feed
+      if (event.message) {
+        addActivity(
+          event.agentId || 'system',
+          event.agentName || 'System',
+          event.message,
+          event.type
+        );
+      }
+    }
+  }, [addActivity]);
 
   // --- Speech bubble helper ---
   const showSpeechBubble = useCallback((agentId, text, duration = 4000) => {
@@ -124,7 +259,6 @@ export default function App() {
           const a1 = shuffled[0];
           const a2 = shuffled[1];
 
-          // Phase 1: Walk to cooler
           const updated = prev.map((a) => {
             if (a.id === a1.id || a.id === a2.id) {
               return { ...a, state: AGENT_STATES.WALKING };
@@ -132,7 +266,6 @@ export default function App() {
             return a;
           });
 
-          // Phase 2: Arrive at cooler and chat
           setTimeout(() => {
             setAgents((p) => p.map((a) => {
               if (a.id === a1.id) return { ...a, state: AGENT_STATES.COLLABORATING, atWaterCooler: true, chattingWith: a2.id };
@@ -147,7 +280,6 @@ export default function App() {
               showSpeechBubble(a2.id, chat2, 3500);
             }, 2000);
 
-            // Phase 3: Walk back
             setTimeout(() => {
               setAgents((p) => p.map((a) => {
                 if (a.id === a1.id || a.id === a2.id) {
@@ -198,7 +330,7 @@ export default function App() {
           return updated;
         }
 
-        // 25% chance: agent thinks aloud at desk (speech bubble only, no state change)
+        // 25% chance: agent thinks aloud at desk
         if (roll < 0.85) {
           const agent = pickRandom(idleAgents);
           showSpeechBubble(agent.id, pickRandom(IDLE_CHATTER), 4000);
@@ -220,10 +352,7 @@ export default function App() {
       });
     };
 
-    // Start idle loop immediately
     idleLoopRef.current = setInterval(doIdleBehavior, 5000 + Math.random() * 3000);
-
-    // First trigger after a short delay
     const firstTimeout = setTimeout(doIdleBehavior, 2000);
 
     return () => {
@@ -278,22 +407,49 @@ export default function App() {
     return () => { clearInterval(loopRef.current); clearInterval(uptimeRef.current); };
   }, [ralphStatus.running]);
 
-  const submitTask = useCallback((description) => {
-    const task = {
+  // Submit task to the backend server
+  const submitTask = useCallback(async (description) => {
+    // Optimistic: add to local state immediately
+    const tempTask = {
       id: `task_${Date.now()}`, description, status: 'pending',
-      createdAt: new Date().toISOString(), assignedTo: null,
+      createdAt: new Date().toISOString(), assignedTo: null, result: null,
     };
-    setTasks((prev) => [task, ...prev]);
+    setTasks((prev) => [tempTask, ...prev]);
     addActivity('system', 'System', `Task submitted: "${description}"`, 'task_submitted');
 
-    // Mike (COO) triages — pull him from whatever idle behavior
+    try {
+      const res = await fetch(`${SERVER_BASE}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const serverTask = await res.json();
+      // Replace optimistic task with server task
+      setTasks((prev) => prev.map((t) =>
+        t.id === tempTask.id ? serverTask : t
+      ));
+    } catch (err) {
+      // Server not available — run client-side fallback simulation
+      addActivity('system', 'System', 'Server offline — running locally', 'system');
+      runLocalFallback(tempTask, description);
+    }
+  }, [addActivity]);
+
+  // Fallback simulation if server is not running
+  const runLocalFallback = useCallback((task, description) => {
+    // Mike triages
     setTimeout(() => {
       setAgents((prev) => prev.map((a) => a.id === 'mike' ? { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));
       setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, status: 'in_progress', assignedTo: 'mike' } : t));
       addActivity('mike', 'Mike', `Triaging: "${description}"`, 'agent_working');
     }, 1000);
 
-    // Delegates
+    // Delegate to a specialist
     setTimeout(() => {
       const delegateTargets = ['rob', 'craig', 'leo', 'ewan', 'alex', 'ken'];
       const target = delegateTargets[Math.floor(Math.random() * delegateTargets.length)];
@@ -307,11 +463,37 @@ export default function App() {
       setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, assignedTo: target } : t));
       addActivity('mike', 'Mike', `Assigned to ${targetAgent.name}`, 'agent_assigned');
 
+      // Complete with a basic result
       setTimeout(() => {
+        const fallbackResult = {
+          agentId: target,
+          agentName: targetAgent.name,
+          agentRole: targetAgent.title,
+          task: description,
+          timestamp: new Date().toISOString(),
+          deliverableType: 'Task Output',
+          summary: `Completed analysis for: "${description}"`,
+          kbDocumentsUsed: [],
+          sections: [
+            {
+              heading: 'Summary',
+              items: [
+                'Task has been processed by the team.',
+                'Start the backend server with "npm run dev:local" for full deliverables.',
+                'The server enables KB-grounded responses with structured output.',
+              ],
+            },
+          ],
+          recommendations: [
+            { priority: 'High', action: 'Run "npm run dev:local" to enable full backend processing', impact: 'Real structured deliverables' },
+          ],
+          kbContext: 'Server offline — connect backend for KB-grounded output.',
+        };
+
         setAgents((prev) => prev.map((a) =>
           a.id === target ? { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 } : a
         ));
-        setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, status: 'completed' } : t));
+        setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, status: 'completed', result: fallbackResult } : t));
         addActivity(target, targetAgent.name, `Completed: "${description}"`, 'task_completed');
 
         setTimeout(() => {
@@ -336,6 +518,9 @@ export default function App() {
           <div className="ctrl-stats">
             <span>Loop: {ralphStatus.loopCount}</span>
             <span>Active: {agents.filter((a) => a.state !== AGENT_STATES.IDLE).length}/{agents.length}</span>
+            <span className={`server-status ${serverConnected ? 'server-on' : 'server-off'}`}>
+              {serverConnected ? 'SERVER' : 'OFFLINE'}
+            </span>
           </div>
         </div>
 
