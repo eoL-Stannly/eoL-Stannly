@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::native_token::LAMPORTS_PER_SOL;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer, CloseAccount};
 
 declare_id!("FBond111111111111111111111111111111111111111");
 
@@ -17,36 +17,57 @@ pub const DISCOUNT_5_DAYS: u64 = 6000;  // 60%
 /// USDC decimals (6 on Solana)
 pub const USDC_DECIMALS: u8 = 6;
 
-/// SHARK decimals (assumed 9, standard for Solana tokens)
-pub const SHARK_DECIMALS: u8 = 9;
+/// $FSOC decimals (9, standard for Solana tokens)
+pub const FSOC_DECIMALS: u8 = 9;
+
+/// Minimum bond amount (prevent dust attacks)
+pub const MIN_SOL_BOND: u64 = 10_000_000; // 0.01 SOL
+pub const MIN_USDC_BOND: u64 = 1_000_000; // 1 USDC
+
+/// Maximum bond per transaction (prevent whale attacks)
+pub const MAX_SOL_BOND: u64 = 100 * LAMPORTS_PER_SOL; // 100 SOL
+pub const MAX_USDC_BOND: u64 = 10_000_000_000; // 10,000 USDC
 
 #[program]
 pub mod fsociety_bonding {
     use super::*;
 
     /// Initialize the bonding treasury
+    /// fsoc_price_usd: Price of $FSOC in micro-USD (6 decimals)
     pub fn initialize_treasury(
         ctx: Context<InitializeTreasury>,
-        shark_price_usd: u64, // Price in micro-USD (6 decimals)
+        fsoc_price_usd: u64,
     ) -> Result<()> {
         let treasury = &mut ctx.accounts.treasury;
         treasury.authority = ctx.accounts.authority.key();
-        treasury.shark_mint = ctx.accounts.shark_mint.key();
+        treasury.fsoc_mint = ctx.accounts.fsoc_mint.key();
         treasury.usdc_mint = ctx.accounts.usdc_mint.key();
-        treasury.shark_vault = ctx.accounts.shark_vault.key();
+        treasury.fsoc_vault = ctx.accounts.fsoc_vault.key();
         treasury.usdc_vault = ctx.accounts.usdc_vault.key();
         treasury.sol_vault = ctx.accounts.sol_vault.key();
-        treasury.shark_price_usd = shark_price_usd;
+        treasury.fsoc_price_usd = fsoc_price_usd;
+        treasury.sol_price_usd = 0; // Will be updated via oracle or admin
         treasury.total_bonds = 0;
-        treasury.total_shark_bonded = 0;
+        treasury.total_fsoc_bonded = 0;
         treasury.is_active = true;
         treasury.bump = ctx.bumps.treasury;
+        treasury.sol_vault_bump = ctx.bumps.sol_vault;
 
-        msg!("Bonding treasury initialized with SHARK price: {} micro-USD", shark_price_usd);
+        msg!("Bonding treasury initialized with $FSOC price: {} micro-USD", fsoc_price_usd);
         Ok(())
     }
 
-    /// Bond with SOL to receive discounted SHARK
+    /// Admin: Update SOL price (should be called regularly or use oracle)
+    /// In production, integrate with Pyth oracle for real-time price
+    pub fn update_sol_price(ctx: Context<UpdateTreasury>, new_sol_price_usd: u64) -> Result<()> {
+        require!(new_sol_price_usd > 0, BondingError::InvalidPrice);
+        let treasury = &mut ctx.accounts.treasury;
+        treasury.sol_price_usd = new_sol_price_usd;
+        msg!("Updated SOL price to {} micro-USD (${:.2})", new_sol_price_usd, new_sol_price_usd as f64 / 1_000_000.0);
+        Ok(())
+    }
+
+    /// Bond with SOL to receive discounted $FSOC
     pub fn bond_with_sol(
         ctx: Context<BondWithSol>,
         sol_amount: u64,
@@ -55,7 +76,9 @@ pub mod fsociety_bonding {
         let treasury = &ctx.accounts.treasury;
 
         require!(treasury.is_active, BondingError::TreasuryInactive);
-        require!(sol_amount > 0, BondingError::InvalidAmount);
+        require!(sol_amount >= MIN_SOL_BOND, BondingError::BondTooSmall);
+        require!(sol_amount <= MAX_SOL_BOND, BondingError::BondTooLarge);
+        require!(treasury.sol_price_usd > 0, BondingError::SolPriceNotSet);
         require!(
             lock_days == LOCK_1_DAY || lock_days == LOCK_3_DAYS || lock_days == LOCK_5_DAYS,
             BondingError::InvalidLockPeriod
@@ -66,27 +89,29 @@ pub mod fsociety_bonding {
         // Get discount based on lock period
         let discount = get_discount(lock_days)?;
 
-        // Calculate SHARK amount
-        // SOL value in USD = sol_amount * sol_price / LAMPORTS_PER_SOL
-        // For simplicity, we use a mock SOL price (should come from oracle in production)
-        let sol_price_usd: u64 = 180_000_000; // $180 in micro-USD
+        // Calculate $FSOC amount using admin-set SOL price
+        // SOL value in USD = sol_amount * sol_price_usd / LAMPORTS_PER_SOL
         let sol_value_usd = sol_amount
-            .checked_mul(sol_price_usd)
-            .unwrap()
+            .checked_mul(treasury.sol_price_usd)
+            .ok_or(BondingError::MathOverflow)?
             .checked_div(LAMPORTS_PER_SOL)
-            .unwrap();
+            .ok_or(BondingError::MathOverflow)?;
 
-        // SHARK amount = sol_value_usd / shark_price * (1 + discount/10000)
-        let discount_multiplier = 10000u64.checked_add(discount).unwrap();
-        let shark_amount = sol_value_usd
+        // $FSOC amount = sol_value_usd / fsoc_price * (1 + discount/10000)
+        let discount_multiplier = 10000u64.checked_add(discount).ok_or(BondingError::MathOverflow)?;
+        let fsoc_amount = sol_value_usd
             .checked_mul(discount_multiplier)
-            .unwrap()
-            .checked_mul(10u64.pow(SHARK_DECIMALS as u32))
-            .unwrap()
-            .checked_div(treasury.shark_price_usd)
-            .unwrap()
+            .ok_or(BondingError::MathOverflow)?
+            .checked_mul(10u64.pow(FSOC_DECIMALS as u32))
+            .ok_or(BondingError::MathOverflow)?
+            .checked_div(treasury.fsoc_price_usd)
+            .ok_or(BondingError::MathOverflow)?
             .checked_div(10000)
-            .unwrap();
+            .ok_or(BondingError::MathOverflow)?;
+
+        // Check if vault has enough $FSOC
+        let vault_balance = ctx.accounts.fsoc_vault.amount;
+        require!(vault_balance >= fsoc_amount, BondingError::InsufficientVaultBalance);
 
         // Transfer SOL from user to treasury
         let ix = anchor_lang::solana_program::system_instruction::transfer(
@@ -109,7 +134,7 @@ pub mod fsociety_bonding {
         bond.treasury = treasury.key();
         bond.payment_amount = sol_amount;
         bond.payment_type = PaymentType::Sol;
-        bond.shark_amount = shark_amount;
+        bond.fsoc_amount = fsoc_amount;
         bond.discount = discount;
         bond.lock_days = lock_days;
         bond.bond_time = clock.unix_timestamp;
@@ -120,19 +145,21 @@ pub mod fsociety_bonding {
         // Update treasury stats
         let treasury = &mut ctx.accounts.treasury;
         treasury.total_bonds += 1;
-        treasury.total_shark_bonded = treasury.total_shark_bonded.checked_add(shark_amount).unwrap();
+        treasury.total_fsoc_bonded = treasury.total_fsoc_bonded
+            .checked_add(fsoc_amount)
+            .ok_or(BondingError::MathOverflow)?;
 
         msg!(
-            "Bond created: {} SOL for {} SHARK ({} bps discount, {} day lock)",
+            "Bond created: {} SOL for {} $FSOC ({} bps discount, {} day lock)",
             sol_amount,
-            shark_amount,
+            fsoc_amount,
             discount,
             lock_days
         );
         Ok(())
     }
 
-    /// Bond with USDC to receive discounted SHARK
+    /// Bond with USDC to receive discounted $FSOC
     pub fn bond_with_usdc(
         ctx: Context<BondWithUsdc>,
         usdc_amount: u64,
@@ -141,7 +168,8 @@ pub mod fsociety_bonding {
         let treasury = &ctx.accounts.treasury;
 
         require!(treasury.is_active, BondingError::TreasuryInactive);
-        require!(usdc_amount > 0, BondingError::InvalidAmount);
+        require!(usdc_amount >= MIN_USDC_BOND, BondingError::BondTooSmall);
+        require!(usdc_amount <= MAX_USDC_BOND, BondingError::BondTooLarge);
         require!(
             lock_days == LOCK_1_DAY || lock_days == LOCK_3_DAYS || lock_days == LOCK_5_DAYS,
             BondingError::InvalidLockPeriod
@@ -152,18 +180,22 @@ pub mod fsociety_bonding {
         // Get discount based on lock period
         let discount = get_discount(lock_days)?;
 
-        // Calculate SHARK amount
+        // Calculate $FSOC amount
         // USDC has 6 decimals, so usdc_amount is already in micro-USD
-        let discount_multiplier = 10000u64.checked_add(discount).unwrap();
-        let shark_amount = usdc_amount
+        let discount_multiplier = 10000u64.checked_add(discount).ok_or(BondingError::MathOverflow)?;
+        let fsoc_amount = usdc_amount
             .checked_mul(discount_multiplier)
-            .unwrap()
-            .checked_mul(10u64.pow(SHARK_DECIMALS as u32))
-            .unwrap()
-            .checked_div(treasury.shark_price_usd)
-            .unwrap()
+            .ok_or(BondingError::MathOverflow)?
+            .checked_mul(10u64.pow(FSOC_DECIMALS as u32))
+            .ok_or(BondingError::MathOverflow)?
+            .checked_div(treasury.fsoc_price_usd)
+            .ok_or(BondingError::MathOverflow)?
             .checked_div(10000)
-            .unwrap();
+            .ok_or(BondingError::MathOverflow)?;
+
+        // Check if vault has enough $FSOC
+        let vault_balance = ctx.accounts.fsoc_vault.amount;
+        require!(vault_balance >= fsoc_amount, BondingError::InsufficientVaultBalance);
 
         // Transfer USDC from user to treasury
         let cpi_accounts = Transfer {
@@ -181,7 +213,7 @@ pub mod fsociety_bonding {
         bond.treasury = treasury.key();
         bond.payment_amount = usdc_amount;
         bond.payment_type = PaymentType::Usdc;
-        bond.shark_amount = shark_amount;
+        bond.fsoc_amount = fsoc_amount;
         bond.discount = discount;
         bond.lock_days = lock_days;
         bond.bond_time = clock.unix_timestamp;
@@ -192,19 +224,22 @@ pub mod fsociety_bonding {
         // Update treasury stats
         let treasury = &mut ctx.accounts.treasury;
         treasury.total_bonds += 1;
-        treasury.total_shark_bonded = treasury.total_shark_bonded.checked_add(shark_amount).unwrap();
+        treasury.total_fsoc_bonded = treasury.total_fsoc_bonded
+            .checked_add(fsoc_amount)
+            .ok_or(BondingError::MathOverflow)?;
 
         msg!(
-            "Bond created: {} USDC for {} SHARK ({} bps discount, {} day lock)",
+            "Bond created: {} USDC for {} $FSOC ({} bps discount, {} day lock)",
             usdc_amount,
-            shark_amount,
+            fsoc_amount,
             discount,
             lock_days
         );
         Ok(())
     }
 
-    /// Claim vested SHARK tokens after lock period
+    /// Claim vested $FSOC tokens after lock period
+    /// Bond account is closed after claim, returning rent to user
     pub fn claim_bond(ctx: Context<ClaimBond>) -> Result<()> {
         let clock = Clock::get()?;
         let bond = &ctx.accounts.bond;
@@ -216,38 +251,43 @@ pub mod fsociety_bonding {
             BondingError::StillVesting
         );
 
-        let shark_amount = bond.shark_amount;
+        let fsoc_amount = bond.fsoc_amount;
 
-        // Transfer SHARK from treasury vault to user
+        // Verify vault has sufficient balance
+        let vault_balance = ctx.accounts.fsoc_vault.amount;
+        require!(vault_balance >= fsoc_amount, BondingError::InsufficientVaultBalance);
+
+        // Transfer $FSOC from treasury vault to user
         let treasury_seeds = &[
             b"treasury".as_ref(),
-            treasury.shark_mint.as_ref(),
+            treasury.fsoc_mint.as_ref(),
             &[treasury.bump],
         ];
         let signer_seeds = &[&treasury_seeds[..]];
 
         let cpi_accounts = Transfer {
-            from: ctx.accounts.shark_vault.to_account_info(),
-            to: ctx.accounts.user_shark_account.to_account_info(),
+            from: ctx.accounts.fsoc_vault.to_account_info(),
+            to: ctx.accounts.user_fsoc_account.to_account_info(),
             authority: ctx.accounts.treasury.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
-        token::transfer(cpi_ctx, shark_amount)?;
+        token::transfer(cpi_ctx, fsoc_amount)?;
 
-        // Mark bond as claimed
+        // Mark bond as claimed (account will be closed below)
         let bond = &mut ctx.accounts.bond;
         bond.claimed = true;
 
-        msg!("Claimed {} SHARK from bond", shark_amount);
+        msg!("Claimed {} $FSOC from bond", fsoc_amount);
         Ok(())
     }
 
-    /// Admin: Update SHARK price
-    pub fn update_shark_price(ctx: Context<UpdateTreasury>, new_price: u64) -> Result<()> {
+    /// Admin: Update $FSOC price
+    pub fn update_fsoc_price(ctx: Context<UpdateTreasury>, new_price: u64) -> Result<()> {
+        require!(new_price > 0, BondingError::InvalidPrice);
         let treasury = &mut ctx.accounts.treasury;
-        treasury.shark_price_usd = new_price;
-        msg!("Updated SHARK price to {} micro-USD", new_price);
+        treasury.fsoc_price_usd = new_price;
+        msg!("Updated $FSOC price to {} micro-USD", new_price);
         Ok(())
     }
 
@@ -259,18 +299,106 @@ pub mod fsociety_bonding {
         Ok(())
     }
 
-    /// Admin: Deposit SHARK tokens to treasury
-    pub fn deposit_shark(ctx: Context<DepositShark>, amount: u64) -> Result<()> {
+    /// Admin: Deposit $FSOC tokens to treasury
+    pub fn deposit_fsoc(ctx: Context<DepositFsoc>, amount: u64) -> Result<()> {
         let cpi_accounts = Transfer {
-            from: ctx.accounts.authority_shark_account.to_account_info(),
-            to: ctx.accounts.shark_vault.to_account_info(),
+            from: ctx.accounts.authority_fsoc_account.to_account_info(),
+            to: ctx.accounts.fsoc_vault.to_account_info(),
             authority: ctx.accounts.authority.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
         token::transfer(cpi_ctx, amount)?;
 
-        msg!("Deposited {} SHARK to treasury", amount);
+        msg!("Deposited {} $FSOC to treasury", amount);
+        Ok(())
+    }
+
+    /// Admin: Withdraw SOL from treasury
+    pub fn withdraw_sol(ctx: Context<WithdrawSol>, amount: u64) -> Result<()> {
+        let treasury = &ctx.accounts.treasury;
+
+        // Get SOL vault balance
+        let sol_vault_balance = ctx.accounts.sol_vault.lamports();
+        require!(sol_vault_balance >= amount, BondingError::InsufficientVaultBalance);
+
+        // Transfer SOL from vault to authority
+        let treasury_seeds = &[
+            b"treasury".as_ref(),
+            treasury.fsoc_mint.as_ref(),
+            &[treasury.bump],
+        ];
+
+        let sol_vault_seeds = &[
+            b"sol_vault".as_ref(),
+            treasury.key().as_ref(),
+            &[treasury.sol_vault_bump],
+        ];
+        let signer_seeds = &[&sol_vault_seeds[..]];
+
+        // Transfer using system program
+        **ctx.accounts.sol_vault.to_account_info().try_borrow_mut_lamports()? -= amount;
+        **ctx.accounts.authority.to_account_info().try_borrow_mut_lamports()? += amount;
+
+        msg!("Withdrawn {} SOL from treasury", amount);
+        Ok(())
+    }
+
+    /// Admin: Withdraw USDC from treasury
+    pub fn withdraw_usdc(ctx: Context<WithdrawUsdc>, amount: u64) -> Result<()> {
+        let treasury = &ctx.accounts.treasury;
+
+        // Verify vault has sufficient balance
+        let vault_balance = ctx.accounts.usdc_vault.amount;
+        require!(vault_balance >= amount, BondingError::InsufficientVaultBalance);
+
+        // Transfer USDC from vault to authority
+        let treasury_seeds = &[
+            b"treasury".as_ref(),
+            treasury.fsoc_mint.as_ref(),
+            &[treasury.bump],
+        ];
+        let signer_seeds = &[&treasury_seeds[..]];
+
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.usdc_vault.to_account_info(),
+            to: ctx.accounts.authority_usdc_account.to_account_info(),
+            authority: ctx.accounts.treasury.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        token::transfer(cpi_ctx, amount)?;
+
+        msg!("Withdrawn {} USDC from treasury", amount);
+        Ok(())
+    }
+
+    /// Admin: Withdraw excess $FSOC from treasury
+    pub fn withdraw_fsoc(ctx: Context<WithdrawFsoc>, amount: u64) -> Result<()> {
+        let treasury = &ctx.accounts.treasury;
+
+        // Verify vault has sufficient balance
+        let vault_balance = ctx.accounts.fsoc_vault.amount;
+        require!(vault_balance >= amount, BondingError::InsufficientVaultBalance);
+
+        // Transfer $FSOC from vault to authority
+        let treasury_seeds = &[
+            b"treasury".as_ref(),
+            treasury.fsoc_mint.as_ref(),
+            &[treasury.bump],
+        ];
+        let signer_seeds = &[&treasury_seeds[..]];
+
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.fsoc_vault.to_account_info(),
+            to: ctx.accounts.authority_fsoc_account.to_account_info(),
+            authority: ctx.accounts.treasury.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        token::transfer(cpi_ctx, amount)?;
+
+        msg!("Withdrawn {} $FSOC from treasury", amount);
         Ok(())
     }
 }
@@ -290,23 +418,23 @@ pub struct InitializeTreasury<'info> {
         init,
         payer = authority,
         space = 8 + BondingTreasury::INIT_SPACE,
-        seeds = [b"treasury", shark_mint.key().as_ref()],
+        seeds = [b"treasury", fsoc_mint.key().as_ref()],
         bump
     )]
     pub treasury: Account<'info, BondingTreasury>,
 
-    pub shark_mint: Account<'info, Mint>,
+    pub fsoc_mint: Account<'info, Mint>,
     pub usdc_mint: Account<'info, Mint>,
 
     #[account(
         init,
         payer = authority,
-        token::mint = shark_mint,
+        token::mint = fsoc_mint,
         token::authority = treasury,
-        seeds = [b"shark_vault", treasury.key().as_ref()],
+        seeds = [b"fsoc_vault", treasury.key().as_ref()],
         bump
     )]
-    pub shark_vault: Account<'info, TokenAccount>,
+    pub fsoc_vault: Account<'info, TokenAccount>,
 
     #[account(
         init,
@@ -320,6 +448,7 @@ pub struct InitializeTreasury<'info> {
 
     /// CHECK: SOL vault is just a PDA that holds SOL
     #[account(
+        mut,
         seeds = [b"sol_vault", treasury.key().as_ref()],
         bump
     )]
@@ -337,7 +466,7 @@ pub struct InitializeTreasury<'info> {
 pub struct BondWithSol<'info> {
     #[account(
         mut,
-        seeds = [b"treasury", treasury.shark_mint.as_ref()],
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
         bump = treasury.bump
     )]
     pub treasury: Account<'info, BondingTreasury>,
@@ -350,6 +479,11 @@ pub struct BondWithSol<'info> {
         bump
     )]
     pub bond: Account<'info, Bond>,
+
+    #[account(
+        constraint = fsoc_vault.key() == treasury.fsoc_vault
+    )]
+    pub fsoc_vault: Account<'info, TokenAccount>,
 
     /// CHECK: SOL vault PDA
     #[account(
@@ -369,7 +503,7 @@ pub struct BondWithSol<'info> {
 pub struct BondWithUsdc<'info> {
     #[account(
         mut,
-        seeds = [b"treasury", treasury.shark_mint.as_ref()],
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
         bump = treasury.bump
     )]
     pub treasury: Account<'info, BondingTreasury>,
@@ -382,6 +516,11 @@ pub struct BondWithUsdc<'info> {
         bump
     )]
     pub bond: Account<'info, Bond>,
+
+    #[account(
+        constraint = fsoc_vault.key() == treasury.fsoc_vault
+    )]
+    pub fsoc_vault: Account<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -406,13 +545,14 @@ pub struct BondWithUsdc<'info> {
 #[derive(Accounts)]
 pub struct ClaimBond<'info> {
     #[account(
-        seeds = [b"treasury", treasury.shark_mint.as_ref()],
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
         bump = treasury.bump
     )]
     pub treasury: Account<'info, BondingTreasury>,
 
     #[account(
         mut,
+        close = user,
         constraint = bond.owner == user.key(),
         constraint = bond.treasury == treasury.key()
     )]
@@ -420,17 +560,18 @@ pub struct ClaimBond<'info> {
 
     #[account(
         mut,
-        constraint = shark_vault.key() == treasury.shark_vault
+        constraint = fsoc_vault.key() == treasury.fsoc_vault
     )]
-    pub shark_vault: Account<'info, TokenAccount>,
+    pub fsoc_vault: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        constraint = user_shark_account.mint == treasury.shark_mint,
-        constraint = user_shark_account.owner == user.key()
+        constraint = user_fsoc_account.mint == treasury.fsoc_mint,
+        constraint = user_fsoc_account.owner == user.key()
     )]
-    pub user_shark_account: Account<'info, TokenAccount>,
+    pub user_fsoc_account: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     pub user: Signer<'info>,
 
     pub token_program: Program<'info, Token>,
@@ -440,7 +581,7 @@ pub struct ClaimBond<'info> {
 pub struct UpdateTreasury<'info> {
     #[account(
         mut,
-        seeds = [b"treasury", treasury.shark_mint.as_ref()],
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
         bump = treasury.bump,
         constraint = treasury.authority == authority.key()
     )]
@@ -450,9 +591,9 @@ pub struct UpdateTreasury<'info> {
 }
 
 #[derive(Accounts)]
-pub struct DepositShark<'info> {
+pub struct DepositFsoc<'info> {
     #[account(
-        seeds = [b"treasury", treasury.shark_mint.as_ref()],
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
         bump = treasury.bump,
         constraint = treasury.authority == authority.key()
     )]
@@ -460,16 +601,95 @@ pub struct DepositShark<'info> {
 
     #[account(
         mut,
-        constraint = shark_vault.key() == treasury.shark_vault
+        constraint = fsoc_vault.key() == treasury.fsoc_vault
     )]
-    pub shark_vault: Account<'info, TokenAccount>,
+    pub fsoc_vault: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        constraint = authority_shark_account.mint == treasury.shark_mint,
-        constraint = authority_shark_account.owner == authority.key()
+        constraint = authority_fsoc_account.mint == treasury.fsoc_mint,
+        constraint = authority_fsoc_account.owner == authority.key()
     )]
-    pub authority_shark_account: Account<'info, TokenAccount>,
+    pub authority_fsoc_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct WithdrawSol<'info> {
+    #[account(
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
+        bump = treasury.bump,
+        constraint = treasury.authority == authority.key()
+    )]
+    pub treasury: Account<'info, BondingTreasury>,
+
+    /// CHECK: SOL vault PDA
+    #[account(
+        mut,
+        seeds = [b"sol_vault", treasury.key().as_ref()],
+        bump = treasury.sol_vault_bump
+    )]
+    pub sol_vault: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct WithdrawUsdc<'info> {
+    #[account(
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
+        bump = treasury.bump,
+        constraint = treasury.authority == authority.key()
+    )]
+    pub treasury: Account<'info, BondingTreasury>,
+
+    #[account(
+        mut,
+        constraint = usdc_vault.key() == treasury.usdc_vault
+    )]
+    pub usdc_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = authority_usdc_account.mint == treasury.usdc_mint,
+        constraint = authority_usdc_account.owner == authority.key()
+    )]
+    pub authority_usdc_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct WithdrawFsoc<'info> {
+    #[account(
+        seeds = [b"treasury", treasury.fsoc_mint.as_ref()],
+        bump = treasury.bump,
+        constraint = treasury.authority == authority.key()
+    )]
+    pub treasury: Account<'info, BondingTreasury>,
+
+    #[account(
+        mut,
+        constraint = fsoc_vault.key() == treasury.fsoc_vault
+    )]
+    pub fsoc_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = authority_fsoc_account.mint == treasury.fsoc_mint,
+        constraint = authority_fsoc_account.owner == authority.key()
+    )]
+    pub authority_fsoc_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -481,16 +701,18 @@ pub struct DepositShark<'info> {
 #[derive(InitSpace)]
 pub struct BondingTreasury {
     pub authority: Pubkey,
-    pub shark_mint: Pubkey,
+    pub fsoc_mint: Pubkey,          // $FSOC token mint
     pub usdc_mint: Pubkey,
-    pub shark_vault: Pubkey,
+    pub fsoc_vault: Pubkey,
     pub usdc_vault: Pubkey,
     pub sol_vault: Pubkey,
-    pub shark_price_usd: u64, // Price in micro-USD (6 decimals)
+    pub fsoc_price_usd: u64,        // Price in micro-USD (6 decimals)
+    pub sol_price_usd: u64,         // SOL price in micro-USD (updated by admin/oracle)
     pub total_bonds: u64,
-    pub total_shark_bonded: u64,
+    pub total_fsoc_bonded: u64,
     pub is_active: bool,
     pub bump: u8,
+    pub sol_vault_bump: u8,
 }
 
 #[account]
@@ -500,7 +722,7 @@ pub struct Bond {
     pub treasury: Pubkey,
     pub payment_amount: u64,
     pub payment_type: PaymentType,
-    pub shark_amount: u64,
+    pub fsoc_amount: u64,           // Amount of $FSOC to receive
     pub discount: u64,
     pub lock_days: u8,
     pub bond_time: i64,
@@ -527,4 +749,16 @@ pub enum BondingError {
     StillVesting,
     #[msg("Bond has already been claimed")]
     AlreadyClaimed,
+    #[msg("Bond amount too small")]
+    BondTooSmall,
+    #[msg("Bond amount too large")]
+    BondTooLarge,
+    #[msg("Insufficient $FSOC balance in vault")]
+    InsufficientVaultBalance,
+    #[msg("SOL price not set - admin must update price")]
+    SolPriceNotSet,
+    #[msg("Invalid price")]
+    InvalidPrice,
+    #[msg("Math overflow")]
+    MathOverflow,
 }

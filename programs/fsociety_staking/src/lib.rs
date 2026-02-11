@@ -19,14 +19,22 @@ pub const MULTIPLIER_5_DAYS: u64 = 16000; // 1.6x (+60% bonus)
 /// Base APR in basis points (adjustable by admin)
 pub const DEFAULT_BASE_APR: u64 = 5000; // 50%
 
-/// Precision multiplier for reward calculations (prevents truncation)
-pub const PRECISION: u64 = 1_000_000_000; // 1e9
+/// Minimum stake amount (prevent dust attacks) - 1 $sFSOC with 9 decimals
+pub const MIN_STAKE_AMOUNT: u64 = 1_000_000_000;
+
+/// Epochs per year for reward calculation
+pub const EPOCHS_PER_YEAR: u64 = 2190; // 365 * 24 / 4
+
+/// Basis points denominator
+pub const BASIS_POINTS: u64 = 10000;
 
 #[program]
 pub mod fsociety_staking {
     use super::*;
 
     /// Initialize the staking pool
+    /// lp_token_mint: $sFSOC (share token that users stake)
+    /// reward_token_mint: $FSOC (reward token users earn)
     pub fn initialize_pool(
         ctx: Context<InitializePool>,
         pool_name: String,
@@ -47,10 +55,11 @@ pub mod fsociety_staking {
         pool.bump = ctx.bumps.pool;
 
         msg!("Staking pool initialized: {}", pool.pool_name);
+        msg!("Stake $sFSOC to earn $FSOC rewards");
         Ok(())
     }
 
-    /// Stake LP tokens with a lock period
+    /// Stake $sFSOC tokens with a lock period
     /// NOTE: Users must claim rewards before staking additional tokens
     pub fn stake(
         ctx: Context<Stake>,
@@ -59,7 +68,7 @@ pub mod fsociety_staking {
     ) -> Result<()> {
         let pool = &ctx.accounts.pool;
         require!(!pool.paused, StakingError::PoolPaused);
-        require!(amount > 0, StakingError::InvalidAmount);
+        require!(amount >= MIN_STAKE_AMOUNT, StakingError::StakeTooSmall);
         require!(
             lock_days == LOCK_1_DAY || lock_days == LOCK_3_DAYS || lock_days == LOCK_5_DAYS,
             StakingError::InvalidLockPeriod
@@ -82,7 +91,7 @@ pub mod fsociety_staking {
 
         if is_new_stake {
             // New stake - initialize everything
-            pool.total_stakers += 1;
+            pool.total_stakers = pool.total_stakers.checked_add(1).ok_or(StakingError::MathOverflow)?;
 
             let lock_duration = (lock_days as i64) * 24 * 60 * 60;
 
@@ -123,7 +132,7 @@ pub mod fsociety_staking {
             stake_account.amount = stake_account.amount.checked_add(amount).ok_or(StakingError::MathOverflow)?;
         }
 
-        // Transfer LP tokens to pool vault
+        // Transfer $sFSOC tokens to pool vault
         let cpi_accounts = Transfer {
             from: ctx.accounts.user_lp_account.to_account_info(),
             to: ctx.accounts.pool_vault.to_account_info(),
@@ -137,7 +146,7 @@ pub mod fsociety_staking {
         pool.total_staked = pool.total_staked.checked_add(amount).ok_or(StakingError::MathOverflow)?;
 
         msg!(
-            "Staked {} LP tokens for {} days (unlock at {})",
+            "Staked {} $sFSOC for {} days (unlock at {})",
             amount,
             stake_account.lock_days,
             stake_account.unlock_time
@@ -145,7 +154,7 @@ pub mod fsociety_staking {
         Ok(())
     }
 
-    /// Unstake LP tokens (only after lock period)
+    /// Unstake $sFSOC tokens (only after lock period)
     pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
         let clock = Clock::get()?;
         let stake_account = &ctx.accounts.stake_account;
@@ -159,7 +168,7 @@ pub mod fsociety_staking {
 
         let amount = stake_account.amount;
 
-        // Transfer LP tokens back to user
+        // Transfer $sFSOC tokens back to user
         let pool_seeds = &[
             b"pool".as_ref(),
             pool.lp_token_mint.as_ref(),
@@ -186,11 +195,11 @@ pub mod fsociety_staking {
         stake_account.amount = 0;
         stake_account.accumulated_rewards = 0;
 
-        msg!("Unstaked {} LP tokens", amount);
+        msg!("Unstaked {} $sFSOC", amount);
         Ok(())
     }
 
-    /// Claim accumulated rewards (rebase mechanism)
+    /// Claim accumulated $FSOC rewards (rebase mechanism)
     /// Rewards are based on epochs passed since last claim
     pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         let clock = Clock::get()?;
@@ -207,31 +216,34 @@ pub mod fsociety_staking {
             return Err(StakingError::NoRewardsYet.into());
         }
 
-        // Calculate reward with higher precision to prevent truncation
-        // Formula: (staked_amount * base_apr * multiplier * epochs_passed) / (10000 * 10000 * epochs_per_year)
-        // Using PRECISION multiplier to prevent early truncation
-        let epochs_per_year: u64 = 2190; // 365 * 24 / 4
-
-        let total_rewards = stake_account.amount
+        // Calculate reward with improved precision
+        // Formula: (staked * base_apr * multiplier * epochs) / (BASIS_POINTS * BASIS_POINTS * EPOCHS_PER_YEAR)
+        // Multiply all numerators first to avoid precision loss
+        let numerator = stake_account.amount
             .checked_mul(pool.base_apr).ok_or(StakingError::MathOverflow)?
             .checked_mul(stake_account.multiplier).ok_or(StakingError::MathOverflow)?
-            .checked_mul(epochs_passed).ok_or(StakingError::MathOverflow)?
-            .checked_div(10000).ok_or(StakingError::MathOverflow)?  // multiplier basis points
-            .checked_div(10000).ok_or(StakingError::MathOverflow)?  // apr basis points
-            .checked_div(epochs_per_year).ok_or(StakingError::MathOverflow)?;
+            .checked_mul(epochs_passed).ok_or(StakingError::MathOverflow)?;
+
+        // Single division at the end for better precision
+        let denominator = BASIS_POINTS
+            .checked_mul(BASIS_POINTS).ok_or(StakingError::MathOverflow)?
+            .checked_mul(EPOCHS_PER_YEAR).ok_or(StakingError::MathOverflow)?;
+
+        let total_rewards = numerator
+            .checked_div(denominator).ok_or(StakingError::MathOverflow)?;
 
         if total_rewards == 0 {
             return Err(StakingError::NoRewardsYet.into());
         }
 
-        // Check if reward vault has sufficient balance
+        // Check if reward vault has sufficient $FSOC balance
         let reward_vault_balance = ctx.accounts.reward_vault.amount;
         require!(
             reward_vault_balance >= total_rewards,
             StakingError::InsufficientRewardBalance
         );
 
-        // Transfer rewards from reward vault
+        // Transfer $FSOC rewards from reward vault
         let pool_seeds = &[
             b"pool".as_ref(),
             pool.lp_token_mint.as_ref(),
@@ -254,15 +266,15 @@ pub mod fsociety_staking {
             .checked_add(total_rewards).ok_or(StakingError::MathOverflow)?;
 
         msg!(
-            "Claimed {} reward tokens ({} epochs)",
+            "Claimed {} $FSOC ({} epochs)",
             total_rewards,
             epochs_passed
         );
         Ok(())
     }
 
-    /// Emergency withdraw - allows users to withdraw LP tokens even during lock
-    /// Forfeits any unclaimed rewards
+    /// Emergency withdraw - allows users to withdraw $sFSOC even during lock
+    /// Forfeits any unclaimed $FSOC rewards
     pub fn emergency_withdraw(ctx: Context<EmergencyWithdraw>) -> Result<()> {
         let stake_account = &ctx.accounts.stake_account;
         let pool = &ctx.accounts.pool;
@@ -271,7 +283,7 @@ pub mod fsociety_staking {
 
         let amount = stake_account.amount;
 
-        // Transfer LP tokens back to user
+        // Transfer $sFSOC tokens back to user
         let pool_seeds = &[
             b"pool".as_ref(),
             pool.lp_token_mint.as_ref(),
@@ -298,7 +310,7 @@ pub mod fsociety_staking {
         stake_account.amount = 0;
         stake_account.accumulated_rewards = 0;
 
-        msg!("Emergency withdraw: {} LP tokens (rewards forfeited)", amount);
+        msg!("Emergency withdraw: {} $sFSOC ($FSOC rewards forfeited)", amount);
         Ok(())
     }
 
@@ -318,7 +330,7 @@ pub mod fsociety_staking {
         Ok(())
     }
 
-    /// Admin: Deposit rewards to the pool
+    /// Admin: Deposit $FSOC rewards to the pool
     pub fn deposit_rewards(ctx: Context<DepositRewards>, amount: u64) -> Result<()> {
         let cpi_accounts = Transfer {
             from: ctx.accounts.authority_reward_account.to_account_info(),
@@ -329,11 +341,40 @@ pub mod fsociety_staking {
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
         token::transfer(cpi_ctx, amount)?;
 
-        msg!("Deposited {} reward tokens to pool", amount);
+        msg!("Deposited {} $FSOC rewards to pool", amount);
         Ok(())
     }
 
-    /// View function: Calculate pending rewards for a user
+    /// Admin: Withdraw excess $FSOC rewards from the pool
+    pub fn withdraw_rewards(ctx: Context<WithdrawRewards>, amount: u64) -> Result<()> {
+        let pool = &ctx.accounts.pool;
+
+        // Verify vault has sufficient balance
+        let vault_balance = ctx.accounts.reward_vault.amount;
+        require!(vault_balance >= amount, StakingError::InsufficientRewardBalance);
+
+        // Transfer $FSOC from reward vault to authority
+        let pool_seeds = &[
+            b"pool".as_ref(),
+            pool.lp_token_mint.as_ref(),
+            &[pool.bump],
+        ];
+        let signer_seeds = &[&pool_seeds[..]];
+
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.reward_vault.to_account_info(),
+            to: ctx.accounts.authority_reward_account.to_account_info(),
+            authority: ctx.accounts.pool.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        token::transfer(cpi_ctx, amount)?;
+
+        msg!("Withdrawn {} $FSOC rewards from pool", amount);
+        Ok(())
+    }
+
+    /// View function: Calculate pending $FSOC rewards for a user
     pub fn get_pending_rewards(ctx: Context<GetPendingRewards>) -> Result<u64> {
         let clock = Clock::get()?;
         let current_epoch = clock.unix_timestamp / EPOCH_DURATION;
@@ -349,17 +390,19 @@ pub mod fsociety_staking {
             return Ok(0);
         }
 
-        let epochs_per_year: u64 = 2190;
-
-        let pending = stake_account.amount
+        // Same formula as claim_rewards for consistency
+        let numerator = stake_account.amount
             .checked_mul(pool.base_apr).unwrap_or(0)
             .checked_mul(stake_account.multiplier).unwrap_or(0)
-            .checked_mul(epochs_passed).unwrap_or(0)
-            .checked_div(10000).unwrap_or(0)
-            .checked_div(10000).unwrap_or(0)
-            .checked_div(epochs_per_year).unwrap_or(0);
+            .checked_mul(epochs_passed).unwrap_or(0);
 
-        msg!("Pending rewards: {}", pending);
+        let denominator = BASIS_POINTS
+            .checked_mul(BASIS_POINTS).unwrap_or(1)
+            .checked_mul(EPOCHS_PER_YEAR).unwrap_or(1);
+
+        let pending = numerator.checked_div(denominator).unwrap_or(0);
+
+        msg!("Pending $FSOC rewards: {}", pending);
         Ok(pending)
     }
 }
@@ -376,7 +419,9 @@ pub struct InitializePool<'info> {
     )]
     pub pool: Account<'info, StakingPool>,
 
+    /// $sFSOC token mint (share token that users stake)
     pub lp_token_mint: Account<'info, Mint>,
+    /// $FSOC token mint (reward token users earn)
     pub reward_token_mint: Account<'info, Mint>,
 
     #[account(
@@ -594,6 +639,34 @@ pub struct DepositRewards<'info> {
 }
 
 #[derive(Accounts)]
+pub struct WithdrawRewards<'info> {
+    #[account(
+        seeds = [b"pool", pool.lp_token_mint.as_ref()],
+        bump = pool.bump,
+        constraint = pool.authority == authority.key()
+    )]
+    pub pool: Account<'info, StakingPool>,
+
+    #[account(
+        mut,
+        constraint = reward_vault.key() == pool.reward_vault
+    )]
+    pub reward_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = authority_reward_account.mint == pool.reward_token_mint,
+        constraint = authority_reward_account.owner == authority.key()
+    )]
+    pub authority_reward_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
 pub struct GetPendingRewards<'info> {
     #[account(
         seeds = [b"pool", pool.lp_token_mint.as_ref()],
@@ -615,8 +688,8 @@ pub struct GetPendingRewards<'info> {
 #[derive(InitSpace)]
 pub struct StakingPool {
     pub authority: Pubkey,
-    pub lp_token_mint: Pubkey,
-    pub reward_token_mint: Pubkey,
+    pub lp_token_mint: Pubkey,      // $sFSOC (share token users stake)
+    pub reward_token_mint: Pubkey,  // $FSOC (reward token users earn)
     pub pool_vault: Pubkey,
     pub reward_vault: Pubkey,
     #[max_len(32)]
@@ -634,13 +707,13 @@ pub struct StakingPool {
 pub struct StakeAccount {
     pub owner: Pubkey,
     pub pool: Pubkey,
-    pub amount: u64,
+    pub amount: u64,                // Amount of $sFSOC staked
     pub lock_days: u8,
     pub stake_time: i64,
     pub unlock_time: i64,
     pub multiplier: u64,
     pub last_claim_epoch: i64,
-    pub accumulated_rewards: u64,
+    pub accumulated_rewards: u64,   // Total $FSOC claimed
     pub bump: u8,
 }
 
@@ -648,6 +721,8 @@ pub struct StakeAccount {
 pub enum StakingError {
     #[msg("Invalid stake amount")]
     InvalidAmount,
+    #[msg("Stake amount too small (minimum 1 $sFSOC)")]
+    StakeTooSmall,
     #[msg("Invalid lock period. Must be 1, 3, or 5 days")]
     InvalidLockPeriod,
     #[msg("No stake found")]
@@ -660,7 +735,7 @@ pub enum StakingError {
     PoolPaused,
     #[msg("Must claim rewards before staking additional tokens")]
     MustClaimBeforeAdditionalStake,
-    #[msg("Insufficient reward token balance in vault")]
+    #[msg("Insufficient $FSOC balance in reward vault")]
     InsufficientRewardBalance,
     #[msg("Math overflow")]
     MathOverflow,
