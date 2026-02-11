@@ -8,7 +8,8 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
     <div className="game-office">
       {/* Ayima Logo Bar */}
       <div className="ayima-logo-bar">
-        <img src="/assets/ayima-logo.svg" alt="Ayima" className="ayima-logo" />
+        <img src="/assets/ayima-logo-white.svg" alt="Ayima" className="ayima-logo" />
+        <span className="ayima-logo-divider">|</span>
         <span className="ayima-logo-text">AGI HQ</span>
       </div>
 
@@ -143,53 +144,76 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
             </div>
           </div>
 
-          {/* Row 2: Breakout Area + Garden */}
+          {/* Row 2: Breakout Area (square, larger) */}
           <div className="office-zone-row">
-            <div className="zone-breakout">
+            <div className="zone-breakout zone-breakout-square">
               <div className="zone-label">Breakout Area</div>
-              <div className="breakout-items">
-                <div className="breakout-couch"></div>
-                <div className="breakout-table"></div>
-                <div className="breakout-couch"></div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <span className="breakout-emoji">&#9749;</span>
-                  <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 5, color: 'rgba(12,53,71,0.5)' }}>COFFEE</span>
+              <div className="breakout-grid">
+                <div className="breakout-section">
+                  <div className="breakout-couch"></div>
+                  <div className="breakout-table"></div>
+                  <div className="breakout-couch"></div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <span className="breakout-emoji">&#127918;</span>
-                  <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 5, color: 'rgba(12,53,71,0.5)' }}>GAMES</span>
+                <div className="breakout-section">
+                  <div className="breakout-station">
+                    <span className="breakout-emoji-lg">&#9749;</span>
+                    <span className="breakout-station-label">COFFEE BAR</span>
+                  </div>
+                  <div className="breakout-station">
+                    <span className="breakout-emoji-lg">&#127918;</span>
+                    <span className="breakout-station-label">GAMES</span>
+                  </div>
+                  <div className="breakout-station">
+                    <span className="breakout-emoji-lg">&#128250;</span>
+                    <span className="breakout-station-label">TV</span>
+                  </div>
+                </div>
+                <div className="breakout-section">
+                  <div className="breakout-couch"></div>
+                  <div className="breakout-beanbag"></div>
+                  <div className="breakout-beanbag"></div>
+                  <div className="breakout-couch"></div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="zone-garden">
-              <div className="zone-label" style={{ color: '#2E7D32', background: 'rgba(46,125,50,0.12)' }}>Outside Garden</div>
-              <div className="garden-path"></div>
-              <div className="garden-items">
-                <div className="garden-item">
-                  <span className="garden-emoji">&#127794;</span>
-                </div>
-                <div className="garden-item">
-                  <span className="garden-emoji-sm">&#127800;</span>
-                  <span className="garden-emoji-sm">&#127799;</span>
-                </div>
-                <div className="garden-item">
-                  <div className="garden-bench"></div>
-                </div>
-                <div className="garden-item">
-                  <span className="garden-emoji-sm">&#127807;</span>
-                  <span className="garden-emoji">&#127795;</span>
-                </div>
-                <div className="garden-item">
-                  <span className="garden-emoji-sm">&#127804;</span>
-                  <span className="garden-emoji-sm">&#127803;</span>
-                </div>
-                <div className="garden-item">
-                  <div className="garden-bench"></div>
-                </div>
-                <div className="garden-item">
-                  <span className="garden-emoji">&#127796;</span>
-                </div>
+          {/* Row 3: Garden (full width, bottom) */}
+          <div className="zone-garden">
+            <div className="zone-label" style={{ color: '#2E7D32', background: 'rgba(46,125,50,0.12)' }}>Outside Garden</div>
+            <div className="garden-path"></div>
+            <div className="garden-items">
+              <div className="garden-item">
+                <span className="garden-emoji">&#127794;</span>
+              </div>
+              <div className="garden-item">
+                <span className="garden-emoji-sm">&#127800;</span>
+                <span className="garden-emoji-sm">&#127799;</span>
+              </div>
+              <div className="garden-item">
+                <div className="garden-bench"></div>
+              </div>
+              <div className="garden-item">
+                <span className="garden-emoji-sm">&#127807;</span>
+                <span className="garden-emoji">&#127795;</span>
+              </div>
+              <div className="garden-item">
+                <span className="garden-emoji">&#127793;</span>
+              </div>
+              <div className="garden-item">
+                <span className="garden-emoji-sm">&#127804;</span>
+                <span className="garden-emoji-sm">&#127803;</span>
+              </div>
+              <div className="garden-item">
+                <div className="garden-bench"></div>
+              </div>
+              <div className="garden-item">
+                <span className="garden-emoji-sm">&#127811;</span>
+                <span className="garden-emoji">&#127796;</span>
+              </div>
+              <div className="garden-item">
+                <span className="garden-emoji-sm">&#127800;</span>
+                <span className="garden-emoji-sm">&#127801;</span>
               </div>
             </div>
           </div>

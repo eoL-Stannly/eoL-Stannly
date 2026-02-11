@@ -4,8 +4,5 @@
       .logo-text { font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif; font-weight: 900; font-size: 68px; letter-spacing: 12px; }
     </style>
   </defs>
-  <!-- Dark version for light backgrounds -->
-  <g class="logo-dark">
-    <text x="10" y="62" class="logo-text" fill="#0C3547">AYIMA</text>
-  </g>
+  <text x="10" y="62" class="logo-text" fill="#FFFFFF">AYIMA</text>
 </svg>

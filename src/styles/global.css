@@ -269,6 +269,56 @@ body {
   padding: 10px;
 }
 
+.zone-breakout-square {
+  min-height: 200px;
+  aspect-ratio: auto;
+}
+
+.breakout-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.breakout-section {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.breakout-station {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(46,196,243,0.06);
+  border-radius: 6px;
+  border: 1px solid rgba(46,196,243,0.1);
+}
+
+.breakout-emoji-lg { font-size: 24px; }
+
+.breakout-station-label {
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  color: var(--ayima-mid);
+  letter-spacing: 0.5px;
+}
+
+.breakout-beanbag {
+  width: 28px;
+  height: 24px;
+  background: var(--ayima-light);
+  border-radius: 50% 50% 40% 40%;
+  opacity: 0.35;
+}
+
 .breakout-items {
   display: flex;
   flex-wrap: wrap;
@@ -2036,8 +2086,16 @@ body {
 }
 
 .ayima-logo {
-  height: 20px;
-  opacity: 0.9;
+  height: 24px;
+  opacity: 0.95;
+  filter: brightness(1.1);
+}
+
+.ayima-logo-divider {
+  color: rgba(255,255,255,0.25);
+  font-size: 18px;
+  font-weight: 200;
+  margin: 0 10px;
 }
 
 .ayima-logo-text {
