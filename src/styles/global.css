@@ -1123,6 +1123,29 @@ body {
   color: var(--text-dim);
 }
 
+.task-result-downloads {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.task-download-btn {
+  font-family: var(--pixel-font);
+  font-size: 5px;
+  padding: 3px 8px;
+  background: rgba(46, 196, 243, 0.15);
+  color: var(--ayima-accent);
+  border: 1px solid rgba(46, 196, 243, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.task-download-btn:hover {
+  background: rgba(46, 196, 243, 0.3);
+  border-color: var(--ayima-accent);
+}
+
 .task-result-summary {
   font-family: var(--pixel-font);
   font-size: 6px;

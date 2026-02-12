@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
 
 const FORMAT_OPTIONS = [
   { value: 'markdown', label: 'Markdown' },
@@ -64,13 +65,31 @@ export default function TaskConfigModal({ taskType, onSubmit, onClose }) {
       preview: null,
     }))]);
 
-    // Read text content for text-based files
     for (const f of valid) {
-      if (isTextFile(f)) {
+      if (isSpreadsheetFile(f)) {
+        // Read XLSX/XLS as ArrayBuffer, convert to CSV via SheetJS
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const firstSheet = wb.Sheets[wb.SheetNames[0]];
+            const csv = XLSX.utils.sheet_to_csv(firstSheet);
+            setFiles((prev) => prev.map((pf) =>
+              pf.name === f.name ? { ...pf, preview: csv.slice(0, 200000) } : pf
+            ));
+          } catch {
+            setFiles((prev) => prev.map((pf) =>
+              pf.name === f.name ? { ...pf, preview: `[Error reading spreadsheet: ${f.name}]` } : pf
+            ));
+          }
+        };
+        reader.readAsArrayBuffer(f);
+      } else if (isTextFile(f)) {
+        // Read text content for text-based files
         const reader = new FileReader();
         reader.onload = (e) => {
           setFiles((prev) => prev.map((pf) =>
-            pf.name === f.name ? { ...pf, preview: e.target.result.slice(0, 50000) } : pf
+            pf.name === f.name ? { ...pf, preview: e.target.result.slice(0, 200000) } : pf
           ));
         };
         reader.readAsText(f);
@@ -107,9 +126,13 @@ export default function TaskConfigModal({ taskType, onSubmit, onClose }) {
     for (const f of files) {
       if (f.preview) {
         fileContents.push({ name: f.name, content: f.preview });
+      } else if (isSpreadsheetFile(f.file)) {
+        // Parse XLSX/XLS on the fly if preview wasn't ready
+        const csv = await readSpreadsheetAsync(f.file);
+        fileContents.push({ name: f.name, content: csv.slice(0, 200000) });
       } else if (isTextFile(f.file)) {
         const content = await readFileAsync(f.file);
-        fileContents.push({ name: f.name, content: content.slice(0, 50000) });
+        fileContents.push({ name: f.name, content: content.slice(0, 200000) });
       } else {
         fileContents.push({ name: f.name, content: `[Binary file: ${f.name}, ${formatFileSize(f.size)}]` });
       }
@@ -258,7 +281,13 @@ export default function TaskConfigModal({ taskType, onSubmit, onClose }) {
   );
 }
 
+function isSpreadsheetFile(file) {
+  const exts = ['.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'];
+  return exts.some((ext) => file.name?.toLowerCase().endsWith(ext));
+}
+
 function isTextFile(file) {
+  if (isSpreadsheetFile(file)) return false; // handled separately
   const textTypes = ['text/', 'application/json', 'application/xml', 'application/csv'];
   const textExts = ['.txt', '.md', '.csv', '.json', '.xml', '.html', '.htm', '.rtf'];
   if (textTypes.some((t) => file.type?.startsWith(t))) return true;
@@ -271,6 +300,23 @@ function readFileAsync(file) {
     reader.onload = (e) => resolve(e.target.result);
     reader.onerror = () => resolve('');
     reader.readAsText(file);
+  });
+}
+
+function readSpreadsheetAsync(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const firstSheet = wb.Sheets[wb.SheetNames[0]];
+        resolve(XLSX.utils.sheet_to_csv(firstSheet));
+      } catch {
+        resolve(`[Error reading spreadsheet: ${file.name}]`);
+      }
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsArrayBuffer(file);
   });
 }
 

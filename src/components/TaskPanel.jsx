@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AGENTS } from '../agents/AgentDefinitions.js';
+import { exportDeliverable } from '../exportDeliverable.js';
 
 export default function TaskPanel({ tasks, onSubmitTask }) {
   const [input, setInput] = useState('');
@@ -161,6 +162,16 @@ function TaskResult({ result }) {
         {result.agentName && (
           <div className="task-result-agent">by {result.agentName} ({result.agentRole})</div>
         )}
+      </div>
+
+      {/* Download buttons */}
+      <div className="task-result-downloads">
+        <button className="task-download-btn" onClick={() => exportDeliverable(result, 'markdown')} title="Download as Markdown">
+          Download MD
+        </button>
+        <button className="task-download-btn" onClick={() => exportDeliverable(result, 'csv')} title="Download as CSV">
+          Download CSV
+        </button>
       </div>
 
       {/* SOP/PRD badges */}
