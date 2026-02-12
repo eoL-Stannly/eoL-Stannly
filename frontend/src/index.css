@@ -45,6 +45,13 @@ body {
   min-height: 100vh;
   background: var(--bg-primary);
   overflow-x: hidden;
+  /* Hide scrollbars */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Background template for pages */
@@ -1552,8 +1559,16 @@ body {
   z-index: 1;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
+  /* Hide scrollbars but keep functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.sections-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .fullpage-section {
