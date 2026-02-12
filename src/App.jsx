@@ -183,17 +183,26 @@ export default function App() {
         }
       }
 
-      // Update tasks
+      // Update tasks — merge server data without overwriting client-side fields
       if (event.task) {
         setTasks((prev) => {
           const exists = prev.find((t) => t.id === event.task.id);
           if (exists) {
             return prev.map((t) => {
               if (t.id === event.task.id) {
-                const updated = { ...event.task };
-                // Clear progress on completion
-                if (updated.status === 'completed') updated.progress = null;
-                return updated;
+                // Merge: keep client-side fields (progress, shortTitle, meta), update server fields
+                const merged = {
+                  ...t,
+                  status: event.task.status || t.status,
+                  assignedTo: event.task.assignedTo || t.assignedTo,
+                };
+                // Only set result and clear progress on completion
+                if (event.type === 'task_completed') {
+                  merged.result = event.task.result || event.result;
+                  merged.status = 'completed';
+                  merged.progress = null;
+                }
+                return merged;
               }
               return t;
             });
