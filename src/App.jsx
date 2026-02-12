@@ -101,55 +101,11 @@ export default function App() {
     }, ...prev].slice(0, 100));
   }, []);
 
-  // --- WebSocket connection to backend ---
-  useEffect(() => {
-    let ws;
-    let reconnectTimer;
-
-    const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
-
-      try {
-        ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-          setServerConnected(true);
-          addActivity('system', 'System', 'Connected to server', 'system');
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            handleServerEvent(data);
-          } catch {
-            // ignore parse errors
-          }
-        };
-
-        ws.onclose = () => {
-          setServerConnected(false);
-          wsRef.current = null;
-          // Try to reconnect after 3 seconds
-          reconnectTimer = setTimeout(connect, 3000);
-        };
-
-        ws.onerror = () => {
-          // Will trigger onclose
-        };
-      } catch {
-        // Server not available, retry
-        reconnectTimer = setTimeout(connect, 3000);
-      }
-    };
-
-    connect();
-
-    return () => {
-      clearTimeout(reconnectTimer);
-      if (ws) ws.close();
-    };
+  // Helper to update a task's progress
+  const updateTaskProgress = useCallback((taskId, stage, percent, stageText) => {
+    setTasks((prev) => prev.map((t) =>
+      t.id === taskId ? { ...t, progress: { stage, percent, stageText } } : t
+    ));
   }, []);
 
   // Handle events from the WebSocket server
@@ -252,6 +208,58 @@ export default function App() {
       }
     }
   }, [addActivity, updateTaskProgress]);
+
+  // Keep a ref to always have the latest handleServerEvent in the WS closure
+  const handleServerEventRef = useRef(handleServerEvent);
+  handleServerEventRef.current = handleServerEvent;
+
+  // --- WebSocket connection to backend ---
+  useEffect(() => {
+    let ws;
+    let reconnectTimer;
+
+    const connect = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+      try {
+        ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          setServerConnected(true);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleServerEventRef.current(data);
+          } catch {
+            // ignore parse errors
+          }
+        };
+
+        ws.onclose = () => {
+          setServerConnected(false);
+          wsRef.current = null;
+          reconnectTimer = setTimeout(connect, 3000);
+        };
+
+        ws.onerror = () => {
+          // Will trigger onclose
+        };
+      } catch {
+        reconnectTimer = setTimeout(connect, 3000);
+      }
+    };
+
+    connect();
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (ws) ws.close();
+    };
+  }, []);
 
   // --- Speech bubble helper ---
   const showSpeechBubble = useCallback((agentId, text, duration = 4000) => {
@@ -429,13 +437,6 @@ export default function App() {
 
     return () => { clearInterval(loopRef.current); clearInterval(uptimeRef.current); };
   }, [ralphStatus.running]);
-
-  // Helper to update a task's progress
-  const updateTaskProgress = useCallback((taskId, stage, percent, stageText) => {
-    setTasks((prev) => prev.map((t) =>
-      t.id === taskId ? { ...t, progress: { stage, percent, stageText } } : t
-    ));
-  }, []);
 
   // Submit task to the backend server
   const submitTask = useCallback(async (description) => {
