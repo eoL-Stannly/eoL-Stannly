@@ -163,6 +163,18 @@ function TaskResult({ result }) {
         )}
       </div>
 
+      {/* SOP/PRD badges */}
+      {(result.sopFollowed || result.prdConformed) && (
+        <div className="task-result-process-badges">
+          {result.sopFollowed && (
+            <span className="task-badge badge-sop">SOP: {result.sopFollowed}</span>
+          )}
+          {result.prdConformed && (
+            <span className="task-badge badge-prd">PRD: {result.prdConformed}</span>
+          )}
+        </div>
+      )}
+
       {result.summary && (
         <div className="task-result-summary">{result.summary}</div>
       )}

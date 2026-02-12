@@ -130,6 +130,9 @@ export default function App() {
         } else if (event.type === 'agent_assigned' && !event.targetAgentId) {
           const name = event.agentName || event.agentId;
           updateTaskProgress(taskId, 'delegating', 35, `${name} is picking up the task...`);
+        } else if (event.type === 'sop_loaded') {
+          const name = event.agentName || event.agentId;
+          updateTaskProgress(taskId, 'searching_kb', 40, `${name} loaded SOP/PRD for ${event.taskType}...`);
         } else if (event.type === 'knowledge_accessed') {
           const name = event.agentName || event.agentId;
           const count = event.documentsFound || 0;

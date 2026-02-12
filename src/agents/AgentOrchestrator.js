@@ -142,6 +142,32 @@ export class AgentOrchestrator {
   }
 
   /**
+   * Identify the task type from the description for SOP/PRD lookup.
+   */
+  identifyTaskType(description) {
+    const desc = description.toLowerCase();
+    if (desc.includes('keyword') || desc.includes('research')) return 'keyword-research';
+    if (desc.includes('content') || desc.includes('production')) return 'content-production';
+    if (desc.includes('redirect') || desc.includes('migration')) return 'redirect-mapping';
+    if (desc.includes('performance') || desc.includes('speed') || desc.includes('vitals')) return 'performance-analysis';
+    if (desc.includes('technical') || desc.includes('audit')) return 'technical-audit';
+    if (desc.includes('internal link')) return 'internal-linking';
+    if (desc.includes('hreflang') || desc.includes('international')) return 'hreflang-mapping';
+    if (desc.includes('sitemap')) return 'sitemap-production';
+    return null;
+  }
+
+  /**
+   * Retrieve the SOP and PRD documents for a task type from the knowledge base.
+   */
+  getSOPandPRD(taskType) {
+    if (!taskType || !this.knowledgeBase) return { sop: null, prd: null };
+    const sop = this.knowledgeBase.getDocument(`sop-${taskType}`);
+    const prd = this.knowledgeBase.getDocument(`prd-${taskType}`);
+    return { sop, prd };
+  }
+
+  /**
    * Process a task with the assigned agent.
    * Queries KB for context, then generates a structured deliverable.
    */
@@ -156,24 +182,50 @@ export class AgentOrchestrator {
       message: `${agent.name} is working on: ${task.description}`,
     });
 
-    // Query knowledge base for context
+    // Identify task type and load SOP/PRD
+    const taskType = this.identifyTaskType(task.description);
+    const { sop, prd } = this.getSOPandPRD(taskType);
+
+    if (sop || prd) {
+      this.notify({
+        type: 'sop_loaded',
+        agentId,
+        agentName: agent.name,
+        taskType,
+        hasSOP: !!sop,
+        hasPRD: !!prd,
+        message: `${agent.name} loaded SOP/PRD for ${taskType}`,
+      });
+    }
+
+    // Query knowledge base for additional context
     const context = this.knowledgeBase
       ? this.knowledgeBase.search(task.description, 5)
       : [];
 
-    if (context.length > 0) {
+    // Filter out SOP/PRD from general search results (they're handled separately)
+    const generalContext = context.filter(
+      (c) => !c.id?.startsWith('sop-') && !c.id?.startsWith('prd-')
+    );
+
+    const allDocs = [];
+    if (sop) allDocs.push(sop);
+    if (prd) allDocs.push(prd);
+    allDocs.push(...generalContext);
+
+    if (allDocs.length > 0) {
       this.notify({
         type: 'knowledge_accessed',
         agentId,
         agentName: agent.name,
-        documentsFound: context.length,
-        documentTitles: context.map((c) => c.title),
-        message: `${agent.name} found ${context.length} relevant KB documents`,
+        documentsFound: allDocs.length,
+        documentTitles: allDocs.map((c) => c.title),
+        message: `${agent.name} found ${allDocs.length} relevant KB documents`,
       });
     }
 
     // Build the prompt context
-    const prompt = this.buildPrompt(agent, task, context);
+    const prompt = this.buildPrompt(agent, task, allDocs, sop, prd);
 
     // Store the interaction
     agent.chatHistory.push({
@@ -183,7 +235,7 @@ export class AgentOrchestrator {
     });
 
     // Generate structured response based on role, task, and KB context
-    const response = await this.generateResponse(agent, task, context);
+    const response = await this.generateResponse(agent, task, allDocs, sop, prd);
 
     agent.chatHistory.push({
       role: 'assistant',
@@ -220,12 +272,25 @@ export class AgentOrchestrator {
     return response;
   }
 
-  buildPrompt(agent, task, context) {
+  buildPrompt(agent, task, context, sop = null, prd = null) {
     let prompt = `${agent.systemPrompt}\n\n`;
 
-    if (context.length > 0) {
+    // Include SOP and PRD as primary context — these define how to do the work
+    if (sop) {
+      prompt += `## Standard Operating Procedure\nFollow this SOP to complete the task:\n\n${sop.content}\n\n`;
+    }
+
+    if (prd) {
+      prompt += `## Deliverable Specification (PRD)\nThe output must conform to this PRD:\n\n${prd.content}\n\n`;
+    }
+
+    // Include additional KB context
+    const generalDocs = context.filter(
+      (c) => c.id !== sop?.id && c.id !== prd?.id
+    );
+    if (generalDocs.length > 0) {
       prompt += `## Relevant Knowledge Base Documents\n`;
-      for (const doc of context) {
+      for (const doc of generalDocs) {
         prompt += `### ${doc.title}\n${doc.content}\n\n`;
       }
     }
@@ -247,14 +312,11 @@ export class AgentOrchestrator {
    * Generate a structured, meaningful response based on agent expertise,
    * task description, and knowledge base context.
    */
-  async generateResponse(agent, task, context) {
+  async generateResponse(agent, task, context, sop = null, prd = null) {
     // Simulate processing time (1-3 seconds)
     await new Promise((r) => setTimeout(r, 1000 + Math.random() * 2000));
 
     const desc = task.description.toLowerCase();
-    const contextSummary = context.length > 0
-      ? context.map((c) => `- **${c.title}**: ${c.content.slice(0, 150).trim()}...`).join('\n')
-      : '_No relevant documents found in knowledge base._';
 
     // Generate role-specific, task-specific deliverables
     const generators = {
@@ -269,13 +331,24 @@ export class AgentOrchestrator {
     const generator = generators[agent.role] || generators.coo;
     const result = generator();
 
+    // Enrich result with SOP/PRD metadata
+    const kbDocs = context.map((c) => c.title);
+    if (sop) {
+      result.sopFollowed = sop.title;
+      if (!kbDocs.includes(sop.title)) kbDocs.push(sop.title);
+    }
+    if (prd) {
+      result.prdConformed = prd.title;
+      if (!kbDocs.includes(prd.title)) kbDocs.push(prd.title);
+    }
+
     return {
       agentId: agent.id,
       agentName: agent.name,
       agentRole: agent.title,
       task: task.description,
       timestamp: new Date().toISOString(),
-      kbDocumentsUsed: context.map((c) => c.title),
+      kbDocumentsUsed: kbDocs,
       ...result,
     };
   }

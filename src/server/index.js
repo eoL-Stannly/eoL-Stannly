@@ -9,7 +9,7 @@ import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import { AgentOrchestrator } from '../agents/AgentOrchestrator.js';
 import { KnowledgeBase } from '../knowledgebase/KnowledgeBase.js';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -21,6 +21,40 @@ const PORT = process.env.PORT || 3001;
 // ---- Initialize Knowledge Base ----
 const kb = new KnowledgeBase();
 kb.loadSeedData();
+
+// Load SOP and PRD markdown files from knowledge/ directory
+function loadKnowledgeFiles() {
+  const dirs = [
+    { path: join(ROOT_DIR, 'knowledge/sops'), category: 'sop', prefix: 'sop' },
+    { path: join(ROOT_DIR, 'knowledge/prds'), category: 'prd', prefix: 'prd' },
+  ];
+
+  let loaded = 0;
+  for (const dir of dirs) {
+    if (!existsSync(dir.path)) continue;
+    const files = readdirSync(dir.path).filter((f) => f.endsWith('.md'));
+    for (const file of files) {
+      const filePath = join(dir.path, file);
+      const content = readFileSync(filePath, 'utf-8');
+      const baseName = file.replace('.md', '');
+      const docId = `${dir.prefix}-${baseName}`;
+
+      // Extract title from first markdown heading
+      const titleMatch = content.match(/^#\s+(.+)/m);
+      const title = titleMatch ? titleMatch[1].replace(/^SOP:\s*|^PRD:\s*/i, '').trim() : baseName;
+
+      kb.addDocument(docId, title, content, {
+        category: dir.category,
+        fileName: file,
+        taskType: baseName,
+      });
+      loaded++;
+    }
+  }
+  console.log(`Loaded ${loaded} SOP/PRD documents into knowledge base`);
+}
+
+loadKnowledgeFiles();
 
 // ---- Initialize Orchestrator ----
 const orchestrator = new AgentOrchestrator(kb);
