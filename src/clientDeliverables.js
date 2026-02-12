@@ -4,7 +4,13 @@
  * Mirrors the server-side AgentOrchestrator response format.
  */
 
+import { tryBuildFromData } from './dataParser.js';
+
 export function generateClientDeliverable(description, agentId, agentName, agentRole) {
+  // Try data-driven deliverable first (user attached CSV/data)
+  const dataResult = tryBuildFromData(description, agentId, agentName, agentRole);
+  if (dataResult) return dataResult;
+
   const desc = description.toLowerCase();
   const timestamp = new Date().toISOString();
   const base = { agentId, agentName, agentRole, task: description, timestamp, kbDocumentsUsed: [] };

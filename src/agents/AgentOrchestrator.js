@@ -5,6 +5,7 @@
  */
 
 import { AGENTS, AGENT_STATES, getAgentById } from './AgentDefinitions.js';
+import { tryBuildFromData } from '../dataParser.js';
 
 export class AgentOrchestrator {
   constructor(knowledgeBase) {
@@ -315,6 +316,20 @@ export class AgentOrchestrator {
   async generateResponse(agent, task, context, sop = null, prd = null) {
     // Simulate processing time (1-3 seconds)
     await new Promise((r) => setTimeout(r, 1000 + Math.random() * 2000));
+
+    // Try data-driven deliverable first (user attached CSV/data)
+    const dataResult = tryBuildFromData(task.description, agent.id, agent.name, agent.title);
+    if (dataResult) {
+      // Enrich with SOP/PRD metadata
+      if (sop) dataResult.sopFollowed = sop.title;
+      if (prd) dataResult.prdConformed = prd.title;
+      const sopPrdDocs = [];
+      if (sop) sopPrdDocs.push(sop.title);
+      if (prd) sopPrdDocs.push(prd.title);
+      dataResult.kbDocumentsUsed = [...sopPrdDocs, ...(dataResult.kbDocumentsUsed || [])];
+      dataResult.task = task.description;
+      return dataResult;
+    }
 
     const desc = task.description.toLowerCase();
 

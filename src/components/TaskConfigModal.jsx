@@ -70,7 +70,7 @@ export default function TaskConfigModal({ taskType, onSubmit, onClose }) {
         const reader = new FileReader();
         reader.onload = (e) => {
           setFiles((prev) => prev.map((pf) =>
-            pf.name === f.name ? { ...pf, preview: e.target.result.slice(0, 2000) } : pf
+            pf.name === f.name ? { ...pf, preview: e.target.result.slice(0, 50000) } : pf
           ));
         };
         reader.readAsText(f);
@@ -109,7 +109,7 @@ export default function TaskConfigModal({ taskType, onSubmit, onClose }) {
         fileContents.push({ name: f.name, content: f.preview });
       } else if (isTextFile(f.file)) {
         const content = await readFileAsync(f.file);
-        fileContents.push({ name: f.name, content: content.slice(0, 10000) });
+        fileContents.push({ name: f.name, content: content.slice(0, 50000) });
       } else {
         fileContents.push({ name: f.name, content: `[Binary file: ${f.name}, ${formatFileSize(f.size)}]` });
       }
