@@ -64,7 +64,16 @@ export default function TaskPanel({ tasks, onSubmitTask }) {
               >
                 <div className="task-status-icon">{getStatusIcon(task.status)}</div>
                 <div className="task-content">
-                  <div className="task-description">{task.description}</div>
+                  <div className="task-description">{task.shortTitle || task.description.split('\n')[0].slice(0, 60)}</div>
+                  {/* Meta badges: brief, attachments, links */}
+                  {task.meta && (
+                    <div className="task-config-badges">
+                      {task.meta.brief && <span className="task-badge badge-brief">Brief</span>}
+                      {task.meta.links?.length > 0 && <span className="task-badge badge-links">{task.meta.links.length} link{task.meta.links.length > 1 ? 's' : ''}</span>}
+                      {task.meta.fileNames?.length > 0 && <span className="task-badge badge-files">{task.meta.fileNames.length} file{task.meta.fileNames.length > 1 ? 's' : ''}</span>}
+                      {task.meta.format && task.meta.format !== 'markdown' && <span className="task-badge badge-format">{task.meta.format.toUpperCase()}</span>}
+                    </div>
+                  )}
                   <div className="task-meta">
                     {task.assignedTo && (
                       <span className="task-assignee">→ {getAgentName(task.assignedTo)}</span>

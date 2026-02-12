@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import OfficeWorkspace from './components/OfficeWorkspace.jsx';
 import ActivityFeed from './components/ActivityFeed.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
+import TaskConfigModal from './components/TaskConfigModal.jsx';
 import KnowledgePanel from './components/KnowledgePanel.jsx';
 import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
@@ -90,6 +91,7 @@ export default function App() {
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showPanel, setShowPanel] = useState('tasks');
   const [serverConnected, setServerConnected] = useState(false);
+  const [configTask, setConfigTask] = useState(null);
   const loopRef = useRef(null);
   const uptimeRef = useRef(null);
   const idleLoopRef = useRef(null);
@@ -439,23 +441,28 @@ export default function App() {
   }, [ralphStatus.running]);
 
   // Submit task to the backend server
-  const submitTask = useCallback(async (description) => {
+  const submitTask = useCallback(async (description, meta) => {
     // Switch to Tasks tab so user sees progress
     setShowPanel('tasks');
+
+    // Use task type label as short title if available
+    const shortTitle = meta?.taskType || description.split('\n')[0].slice(0, 60);
 
     const tempTask = {
       id: `task_${Date.now()}`, description, status: 'pending',
       createdAt: new Date().toISOString(), assignedTo: null, result: null,
       progress: { stage: 'queued', percent: 5, stageText: 'Queued — waiting for triage...' },
+      meta: meta || null,
+      shortTitle,
     };
     setTasks((prev) => [tempTask, ...prev]);
-    addActivity('system', 'System', `Task submitted: "${description}"`, 'task_submitted');
+    addActivity('system', 'System', `Task submitted: ${shortTitle}`, 'task_submitted');
 
     try {
       const res = await fetch(`${SERVER_BASE}/api/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description }),
+        body: JSON.stringify({ description, meta }),
       });
 
       if (!res.ok) {
@@ -563,7 +570,7 @@ export default function App() {
               key={btn.label}
               className="seo-task-btn"
               title={btn.desc}
-              onClick={() => submitTask(btn.desc)}
+              onClick={() => setConfigTask(btn)}
             >
               {btn.label}
             </button>
@@ -597,6 +604,17 @@ export default function App() {
 
       {selectedAgent && (
         <AgentDetail agent={agents.find((a) => a.id === selectedAgent)} onClose={() => setSelectedAgent(null)} />
+      )}
+
+      {configTask && (
+        <TaskConfigModal
+          taskType={configTask}
+          onClose={() => setConfigTask(null)}
+          onSubmit={(description, meta) => {
+            setConfigTask(null);
+            submitTask(description, meta);
+          }}
+        />
       )}
     </div>
   );
