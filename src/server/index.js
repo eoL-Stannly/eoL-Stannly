@@ -118,16 +118,36 @@ app.get('/api/agents/:id', (req, res) => {
   res.json(agent);
 });
 
-// Submit a task
-app.post('/api/tasks', async (req, res) => {
-  try {
-    const { description, priority } = req.body;
-    if (!description) return res.status(400).json({ error: 'Description required' });
-    const task = await orchestrator.submitTask(description, priority);
-    res.json(task);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Submit a task — returns immediately, processes asynchronously via WebSocket
+app.post('/api/tasks', (req, res) => {
+  const { description, priority } = req.body;
+  if (!description) return res.status(400).json({ error: 'Description required' });
+
+  // Create the task skeleton and return it immediately
+  const task = {
+    id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    description,
+    priority: priority || 'normal',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    assignedTo: null,
+    result: null,
+  };
+
+  res.json(task);
+
+  // Process asynchronously — progress delivered via WebSocket events
+  orchestrator.submitTask(description, priority, task.id).catch((err) => {
+    console.error('Task processing error:', err);
+    broadcast({
+      type: 'orchestrator_event',
+      payload: {
+        type: 'task_error',
+        task,
+        message: `Error processing task: ${err.message}`,
+      },
+    });
+  });
 });
 
 // Get orchestrator status

@@ -123,7 +123,10 @@ export default function App() {
       // Update progress stages based on server events
       if (taskId) {
         if (event.type === 'agent_working' && event.agentId === 'mike') {
-          updateTaskProgress(taskId, 'triaging', 15, 'Mike is triaging the request...');
+          updateTaskProgress(taskId, 'triaging', 10, 'Mike is triaging the request...');
+        } else if (event.type === 'triage_result') {
+          const taskTypeName = event.taskType?.replace(/-/g, ' ') || 'task';
+          updateTaskProgress(taskId, 'triaging', 20, `Mike identified: ${taskTypeName}`);
         } else if (event.type === 'agent_assigned' && event.targetAgentId) {
           const name = event.targetAgentName || event.targetAgentId;
           updateTaskProgress(taskId, 'delegating', 30, `Delegated to ${name}...`);
@@ -473,10 +476,11 @@ export default function App() {
       }
 
       const serverTask = await res.json();
-      // Replace optimistic task with server task (server already completed it)
+      // Map our temp task ID to the server task ID so WS events match
       setTasks((prev) => prev.map((t) =>
-        t.id === tempTask.id ? { ...serverTask, progress: null } : t
+        t.id === tempTask.id ? { ...t, id: serverTask.id } : t
       ));
+      // Progress will be delivered via WebSocket events — no overwrite needed
     } catch {
       // Server not available — run client-side with full progress
       runLocalFallback(tempTask, description);

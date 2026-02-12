@@ -61,9 +61,9 @@ export class AgentOrchestrator {
    * Submit a task to the orchestrator.
    * Mike (COO) triages, then delegates to the best specialist.
    */
-  async submitTask(description, priority = 'normal') {
+  async submitTask(description, priority = 'normal', existingTaskId = null) {
     const task = {
-      id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: existingTaskId || `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       description,
       priority,
       status: 'pending',
@@ -77,7 +77,7 @@ export class AgentOrchestrator {
     this.notify({
       type: 'task_submitted',
       task,
-      message: `New task submitted: ${description}`,
+      message: `New task submitted: ${description.split('\n')[0].slice(0, 80)}`,
     });
 
     // Mike (COO) triages — find the best specialist
@@ -89,11 +89,28 @@ export class AgentOrchestrator {
       type: 'agent_working',
       agentId: 'mike',
       agentName: 'Mike',
-      message: `Mike is triaging: "${description}"`,
+      task,
+      message: `Mike is triaging: "${description.split('\n')[0].slice(0, 80)}"`,
     });
 
-    // Brief triage delay
-    await new Promise((r) => setTimeout(r, 800));
+    // Identify task type and determine specialist
+    const taskType = this.identifyTaskType(description);
+
+    // Triage delay — Mike reviews the request
+    await new Promise((r) => setTimeout(r, 1500));
+
+    // Mike announces the triage result
+    if (taskType) {
+      this.notify({
+        type: 'triage_result',
+        agentId: 'mike',
+        agentName: 'Mike',
+        task,
+        taskType,
+        message: `Mike identified task type: ${taskType.replace(/-/g, ' ')}`,
+      });
+      await new Promise((r) => setTimeout(r, 800));
+    }
 
     // Find the best agent for this task
     const bestRole = this.inferRole(description);
@@ -180,7 +197,8 @@ export class AgentOrchestrator {
       type: 'agent_working',
       agentId,
       agentName: agent.name,
-      message: `${agent.name} is working on: ${task.description}`,
+      task,
+      message: `${agent.name} is working on: ${task.description.split('\n')[0].slice(0, 80)}`,
     });
 
     // Identify task type and load SOP/PRD
@@ -188,14 +206,16 @@ export class AgentOrchestrator {
     const { sop, prd } = this.getSOPandPRD(taskType);
 
     if (sop || prd) {
+      await new Promise((r) => setTimeout(r, 600));
       this.notify({
         type: 'sop_loaded',
         agentId,
         agentName: agent.name,
+        task,
         taskType,
         hasSOP: !!sop,
         hasPRD: !!prd,
-        message: `${agent.name} loaded SOP/PRD for ${taskType}`,
+        message: `${agent.name} loaded SOP/PRD for ${taskType.replace(/-/g, ' ')}`,
       });
     }
 
@@ -215,10 +235,12 @@ export class AgentOrchestrator {
     allDocs.push(...generalContext);
 
     if (allDocs.length > 0) {
+      await new Promise((r) => setTimeout(r, 500));
       this.notify({
         type: 'knowledge_accessed',
         agentId,
         agentName: agent.name,
+        task,
         documentsFound: allDocs.length,
         documentTitles: allDocs.map((c) => c.title),
         message: `${agent.name} found ${allDocs.length} relevant KB documents`,
