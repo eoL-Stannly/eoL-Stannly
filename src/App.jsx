@@ -120,31 +120,43 @@ export default function App() {
       const event = data.payload;
       const taskId = event.task?.id;
 
-      // Update progress stages based on server events
+      // Update progress from server events — only advance forward, never backwards.
+      // Local fallback is also running, so server events just reinforce/accelerate progress.
       if (taskId) {
+        const advanceProgress = (stage, percent, stageText) => {
+          setTasks((prev) => prev.map((t) => {
+            if (t.id !== taskId) return t;
+            const current = t.progress?.percent || 0;
+            if (percent <= current) return t; // Never go backwards
+            return { ...t, progress: { stage, percent, stageText } };
+          }));
+        };
+
         if (event.type === 'agent_working' && event.agentId === 'mike') {
-          updateTaskProgress(taskId, 'triaging', 10, 'Mike is triaging the request...');
+          advanceProgress('triaging', 10, 'Mike is triaging the request...');
         } else if (event.type === 'triage_result') {
           const taskTypeName = event.taskType?.replace(/-/g, ' ') || 'task';
-          updateTaskProgress(taskId, 'triaging', 20, `Mike identified: ${taskTypeName}`);
+          advanceProgress('triaging', 20, `Mike identified: ${taskTypeName}`);
         } else if (event.type === 'agent_assigned' && event.targetAgentId) {
           const name = event.targetAgentName || event.targetAgentId;
-          updateTaskProgress(taskId, 'delegating', 30, `Delegated to ${name}...`);
+          advanceProgress('delegating', 30, `Delegated to ${name}...`);
         } else if (event.type === 'agent_assigned' && !event.targetAgentId) {
           const name = event.agentName || event.agentId;
-          updateTaskProgress(taskId, 'delegating', 35, `${name} is picking up the task...`);
+          advanceProgress('delegating', 35, `${name} is picking up the task...`);
         } else if (event.type === 'sop_loaded') {
           const name = event.agentName || event.agentId;
-          updateTaskProgress(taskId, 'searching_kb', 40, `${name} loaded SOP/PRD for ${event.taskType}...`);
+          advanceProgress('searching_kb', 45, `${name} loaded SOP/PRD for ${event.taskType}...`);
         } else if (event.type === 'knowledge_accessed') {
           const name = event.agentName || event.agentId;
           const count = event.documentsFound || 0;
-          updateTaskProgress(taskId, 'searching_kb', 50, `${name} found ${count} KB documents...`);
-        } else if (event.type === 'agent_working') {
+          advanceProgress('searching_kb', 55, `${name} found ${count} KB documents...`);
+        } else if (event.type === 'agent_working' && event.agentId !== 'mike') {
           const name = event.agentName || event.agentId;
-          updateTaskProgress(taskId, 'working', 70, `${name} is generating deliverable...`);
+          advanceProgress('working', 70, `${name} is generating deliverable...`);
         } else if (event.type === 'task_completed') {
-          updateTaskProgress(taskId, 'completing', 100, 'Complete!');
+          advanceProgress('completing', 100, 'Complete!');
+        } else if (event.type === 'task_error') {
+          advanceProgress('error', 100, event.message || 'Task failed');
         }
       }
 
@@ -224,7 +236,7 @@ export default function App() {
         );
       }
     }
-  }, [addActivity, updateTaskProgress]);
+  }, [addActivity]);
 
   // Keep a ref to always have the latest handleServerEvent in the WS closure
   const handleServerEventRef = useRef(handleServerEvent);
@@ -455,15 +467,12 @@ export default function App() {
     return () => { clearInterval(loopRef.current); clearInterval(uptimeRef.current); };
   }, [ralphStatus.running]);
 
-  // Submit task to the backend server
+  // Submit task — always runs local fallback for guaranteed progress.
+  // If server is connected, also submits there; server result overrides local when it arrives.
   const submitTask = useCallback(async (description, meta) => {
-    // Switch to Tasks tab so user sees progress
     setShowPanel('tasks');
 
-    // Use task type label as short title if available
     const shortTitle = meta?.taskType || description.split('\n')[0].slice(0, 60);
-
-    // Generate task ID client-side so WS events match immediately (no race condition)
     const taskId = `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const tempTask = {
@@ -476,21 +485,18 @@ export default function App() {
     setTasks((prev) => [tempTask, ...prev]);
     addActivity('system', 'System', `Task submitted: ${shortTitle}`, 'task_submitted');
 
+    // Always run local progress — guarantees visible progress stages
+    runLocalFallback(tempTask, description);
+
+    // Also submit to server if available — server result replaces local on completion
     try {
-      const res = await fetch(`${SERVER_BASE}/api/tasks`, {
+      await fetch(`${SERVER_BASE}/api/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description, meta, taskId }),
       });
-
-      if (!res.ok) {
-        throw new Error(`Server error: ${res.status}`);
-      }
-
-      // Server uses our taskId — WS events already match, nothing to remap
     } catch {
-      // Server not available — run client-side with full progress
-      runLocalFallback(tempTask, description);
+      // Server not available — local fallback already running
     }
   }, [addActivity]);
 
@@ -505,7 +511,7 @@ export default function App() {
       updateTaskProgress(taskId, 'triaging', 15, 'Mike is triaging the request...');
       setAgents((prev) => prev.map((a) => a.id === 'mike' ? { ...a, state: AGENT_STATES.THINKING, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));
       setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: 'in_progress', assignedTo: 'mike' } : t));
-      addActivity('mike', 'Mike', `Triaging: "${description}"`, 'agent_working');
+      addActivity('mike', 'Mike', `Triaging: "${description.split('\n')[0].slice(0, 80)}"`, 'agent_working');
     }, 800);
 
     // Stage 2: Delegating (2.5s)
@@ -530,7 +536,7 @@ export default function App() {
     setTimeout(() => {
       updateTaskProgress(taskId, 'working', 70, `${targetAgent.name} is generating deliverable...`);
       setAgents((prev) => prev.map((a) => a.id === target ? { ...a, state: AGENT_STATES.WORKING } : a));
-      addActivity(target, targetAgent.name, `Working on: "${description}"`, 'agent_working');
+      addActivity(target, targetAgent.name, `Working on: "${description.split('\n')[0].slice(0, 80)}"`, 'agent_working');
     }, 5500);
 
     // Stage 5: Almost done (7.5s)
@@ -538,17 +544,20 @@ export default function App() {
       updateTaskProgress(taskId, 'working', 90, `${targetAgent.name} is finalising output...`);
     }, 7500);
 
-    // Stage 6: Complete (9s)
+    // Stage 6: Complete (9s) — only if server hasn't already completed this task
     setTimeout(() => {
-      updateTaskProgress(taskId, 'completing', 100, 'Complete!');
+      setTasks((prev) => {
+        const existing = prev.find((t) => t.id === taskId);
+        if (existing && existing.status === 'completed') return prev; // Server already completed it
 
-      const result = generateClientDeliverable(description, target, targetAgent.name, targetAgent.title);
+        const result = generateClientDeliverable(description, target, targetAgent.name, targetAgent.title);
+        return prev.map((t) => t.id === taskId ? { ...t, status: 'completed', result, progress: null } : t);
+      });
 
       setAgents((prev) => prev.map((a) =>
         a.id === target ? { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 } : a
       ));
-      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: 'completed', result, progress: null } : t));
-      addActivity(target, targetAgent.name, `Completed: "${description}"`, 'task_completed');
+      addActivity(target, targetAgent.name, `Completed: "${description.split('\n')[0].slice(0, 80)}"`, 'task_completed');
 
       setTimeout(() => {
         setAgents((prev) => prev.map((a) => a.id === target ? { ...a, state: AGENT_STATES.IDLE } : a));
