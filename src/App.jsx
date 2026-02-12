@@ -454,8 +454,11 @@ export default function App() {
     // Use task type label as short title if available
     const shortTitle = meta?.taskType || description.split('\n')[0].slice(0, 60);
 
+    // Generate task ID client-side so WS events match immediately (no race condition)
+    const taskId = `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
     const tempTask = {
-      id: `task_${Date.now()}`, description, status: 'pending',
+      id: taskId, description, status: 'pending',
       createdAt: new Date().toISOString(), assignedTo: null, result: null,
       progress: { stage: 'queued', percent: 5, stageText: 'Queued — waiting for triage...' },
       meta: meta || null,
@@ -468,19 +471,14 @@ export default function App() {
       const res = await fetch(`${SERVER_BASE}/api/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description, meta }),
+        body: JSON.stringify({ description, meta, taskId }),
       });
 
       if (!res.ok) {
         throw new Error(`Server error: ${res.status}`);
       }
 
-      const serverTask = await res.json();
-      // Map our temp task ID to the server task ID so WS events match
-      setTasks((prev) => prev.map((t) =>
-        t.id === tempTask.id ? { ...t, id: serverTask.id } : t
-      ));
-      // Progress will be delivered via WebSocket events — no overwrite needed
+      // Server uses our taskId — WS events already match, nothing to remap
     } catch {
       // Server not available — run client-side with full progress
       runLocalFallback(tempTask, description);
