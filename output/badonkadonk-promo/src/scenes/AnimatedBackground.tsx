@@ -16,12 +16,12 @@ const FloatingOrb: React.FC<{
   delay: number;
 }> = ({ frame, x, y, size, color, speed, delay }) => {
   const adjustedFrame = frame - delay;
-  const moveX = Math.sin(adjustedFrame * speed * 0.01) * 60;
-  const moveY = Math.cos(adjustedFrame * speed * 0.008) * 40;
+  const moveX = Math.sin(adjustedFrame * speed * 0.01) * 50;
+  const moveY = Math.cos(adjustedFrame * speed * 0.008) * 35;
   const pulse = interpolate(
     Math.sin(adjustedFrame * 0.03),
     [-1, 1],
-    [0.7, 1.3]
+    [0.8, 1.2]
   );
 
   return (
@@ -33,67 +33,62 @@ const FloatingOrb: React.FC<{
         width: size * pulse,
         height: size * pulse,
         borderRadius: "50%",
-        background: `radial-gradient(circle, ${color}40 0%, ${color}00 70%)`,
-        filter: "blur(40px)",
+        background: `radial-gradient(circle, ${color}35 0%, ${color}00 70%)`,
+        filter: "blur(50px)",
       }}
     />
   );
 };
 
-export const AnimatedBackground: React.FC<Props> = ({ frame, fps }) => {
-  const gridOpacity = interpolate(frame, [0, 60], [0, 0.08], {
+export const AnimatedBackground: React.FC<Props> = ({ frame }) => {
+  const gridOpacity = interpolate(frame, [0, 60], [0, 0.06], {
     extrapolateRight: "clamp",
   });
 
-  const gradientAngle = interpolate(frame, [0, 900], [0, 360]);
-
   return (
     <AbsoluteFill>
-      {/* Deep dark base */}
+      {/* Deep dark base — matches site's near-black background */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "#000000",
+        }}
+      />
+
+      {/* Subtle warm radial glows */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background: `
-            radial-gradient(ellipse at 30% 20%, #1a0a2e22 0%, transparent 50%),
-            radial-gradient(ellipse at 70% 80%, #0a1a2e22 0%, transparent 50%),
-            #06060c
+            radial-gradient(ellipse at 25% 30%, #ff8c0012 0%, transparent 50%),
+            radial-gradient(ellipse at 75% 70%, #ff6a0010 0%, transparent 50%)
           `,
         }}
       />
 
-      {/* Animated gradient sweep */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `conic-gradient(from ${gradientAngle}deg at 50% 50%, transparent 0deg, #ff6b3520 60deg, transparent 120deg, #3b82f615 200deg, transparent 280deg, #f59e0b10 340deg, transparent 360deg)`,
-          opacity: 0.4,
-        }}
-      />
+      {/* Floating orange orbs */}
+      <FloatingOrb frame={frame} x={150} y={100} size={350} color="#ff8c00" speed={1.0} delay={0} />
+      <FloatingOrb frame={frame} x={1500} y={600} size={280} color="#ff6a00" speed={0.7} delay={30} />
+      <FloatingOrb frame={frame} x={900} y={850} size={200} color="#ffa040" speed={0.9} delay={50} />
+      <FloatingOrb frame={frame} x={1700} y={80} size={160} color="#ff6a00" speed={1.2} delay={20} />
 
-      {/* Floating orbs */}
-      <FloatingOrb frame={frame} x={200} y={150} size={300} color="#ff6b35" speed={1.2} delay={0} />
-      <FloatingOrb frame={frame} x={1400} y={600} size={250} color="#3b82f6" speed={0.8} delay={30} />
-      <FloatingOrb frame={frame} x={800} y={800} size={200} color="#f59e0b" speed={1.0} delay={60} />
-      <FloatingOrb frame={frame} x={1600} y={100} size={180} color="#ff6b35" speed={1.4} delay={45} />
-      <FloatingOrb frame={frame} x={100} y={700} size={220} color="#3b82f6" speed={0.9} delay={15} />
-
-      {/* Subtle grid overlay */}
+      {/* Subtle grid */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           opacity: gridOpacity,
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+            linear-gradient(rgba(255,140,0,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,140,0,0.04) 1px, transparent 1px)
           `,
-          backgroundSize: "60px 60px",
+          backgroundSize: "80px 80px",
         }}
       />
 
-      {/* Scanline effect */}
+      {/* Film grain overlay */}
       <div
         style={{
           position: "absolute",
@@ -102,10 +97,10 @@ export const AnimatedBackground: React.FC<Props> = ({ frame, fps }) => {
             0deg,
             transparent,
             transparent 2px,
-            rgba(0,0,0,0.03) 2px,
-            rgba(0,0,0,0.03) 4px
+            rgba(0,0,0,0.02) 2px,
+            rgba(0,0,0,0.02) 4px
           )`,
-          opacity: 0.5,
+          opacity: 0.4,
         }}
       />
     </AbsoluteFill>

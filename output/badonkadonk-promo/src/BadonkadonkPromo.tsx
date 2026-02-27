@@ -4,55 +4,54 @@ import {
   Sequence,
   useCurrentFrame,
   useVideoConfig,
-  interpolate,
-  spring,
 } from "remotion";
 import { IntroScene } from "./scenes/IntroScene";
 import { WebsiteRevealScene } from "./scenes/WebsiteRevealScene";
-import { FeaturesScene } from "./scenes/FeaturesScene";
-import { WalkthroughScene } from "./scenes/WalkthroughScene";
+import { TempleScene } from "./scenes/TempleScene";
+import { BonkOrPassScene } from "./scenes/BonkOrPassScene";
 import { CTAScene } from "./scenes/CTAScene";
 import { AnimatedBackground } from "./scenes/AnimatedBackground";
 
 // 30 seconds at 30fps = 900 frames
-// Scene breakdown:
-// Intro:          0-150   (5s)  - Brand reveal with energy
-// Website Reveal: 120-330 (7s)  - Animated website mockup entrance
-// Features:       300-540 (8s)  - Feature showcase with icons
-// Walkthrough:    510-750 (8s)  - Scrolling website walkthrough
-// CTA:            720-900 (6s)  - Call to action with URL
+//
+// Scene breakdown (with overlapping transitions):
+// 1. Intro:         0–150   (5.0s)  Brand reveal — ticker, BADONK title, tagline
+// 2. Website Reveal: 130–340 (7.0s)  Browser mockup of actual site flies in
+// 3. Temple/Rituals: 310–560 (8.3s)  Temple of Curves origin + Weekly Rituals cards
+// 4. Bonk/Cup:       530–770 (8.0s)  Bonk or Pass voting + Badonk Cup bracket
+// 5. CTA:            740–900 (5.3s)  "Join The Temple" finale with URL
 
 export const BadonkadonkPromo: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#0a0a0f" }}>
-      {/* Persistent animated background */}
+    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
+      {/* Persistent animated background — always visible */}
       <AnimatedBackground frame={frame} fps={fps} />
 
-      {/* Scene 1: Intro - Brand Name Reveal */}
+      {/* Scene 1: Intro — $BADONK brand reveal */}
       <Sequence from={0} durationInFrames={150}>
         <IntroScene />
       </Sequence>
 
-      {/* Scene 2: Website Reveal - Browser mockup flies in */}
-      <Sequence from={120} durationInFrames={210}>
+      {/* Scene 2: Website Reveal — browser mockup of the actual site */}
+      <Sequence from={130} durationInFrames={210}>
         <WebsiteRevealScene />
       </Sequence>
 
-      {/* Scene 3: Features - Animated feature cards */}
-      <Sequence from={300} durationInFrames={240}>
-        <FeaturesScene />
+      {/* Scene 3: Temple of Curves + Weekly Rituals */}
+      <Sequence from={310} durationInFrames={250}>
+        <TempleScene />
       </Sequence>
 
-      {/* Scene 4: Walkthrough - Scrolling site content */}
-      <Sequence from={510} durationInFrames={240}>
-        <WalkthroughScene />
+      {/* Scene 4: Bonk or Pass + The Badonk Cup */}
+      <Sequence from={530} durationInFrames={240}>
+        <BonkOrPassScene />
       </Sequence>
 
-      {/* Scene 5: CTA - Final call to action */}
-      <Sequence from={720} durationInFrames={180}>
+      {/* Scene 5: CTA — Join The Temple */}
+      <Sequence from={740} durationInFrames={160}>
         <CTAScene />
       </Sequence>
     </AbsoluteFill>
