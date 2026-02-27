@@ -1,0 +1,17 @@
+[project]
+name = "scrapling-learn"
+version = "0.1.0"
+description = "Learn web scraping with Scrapling"
+requires-python = ">=3.9"
+dependencies = [
+    "scrapling>=0.2",
+]
+
+[project.optional-dependencies]
+fetchers = [
+    "scrapling[fetchers]>=0.2",
+]
+dev = [
+    "ruff",
+    "mypy",
+]
