@@ -4,20 +4,24 @@ import ActivityFeed from './components/ActivityFeed.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import TaskConfigModal from './components/TaskConfigModal.jsx';
 import PageContentAuditModal from './components/PageContentAuditModal.jsx';
+import SeoToolModal from './components/SeoToolModal.jsx';
 import KnowledgePanel from './components/KnowledgePanel.jsx';
 import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
 
 const SEO_TASK_BUTTONS = [
-  { label: 'Keyword Research', desc: 'Research and analyse target keywords for SEO campaigns' },
-  { label: 'Content Production', desc: 'Create and optimise SEO content based on keyword research' },
-  { label: 'Redirect Mapping', desc: 'Map redirect rules for site migrations and URL changes' },
-  { label: 'Performance Analysis', desc: 'Analyse site performance metrics and Core Web Vitals' },
-  { label: 'Technical Auditing', desc: 'Run comprehensive technical SEO audit of the site' },
-  { label: 'Internal Linking', desc: 'Analyse and optimise internal link structure' },
-  { label: 'HREFLANG Mapping', desc: 'Map hreflang tags for international SEO targeting' },
-  { label: 'Sitemap Production', desc: 'Generate and validate XML sitemaps for the site' },
-  { label: 'Page Content Audit', desc: 'Run E-E-A-T content quality analysis on a URL', special: 'page-audit' },
+  { label: 'Full Audit', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob' },
+  { label: 'Page Analysis', desc: 'Deep single-page analysis', command: 'page', agent: 'ewan' },
+  { label: 'Technical SEO', desc: 'Technical SEO (crawlability, indexability, CWV)', command: 'technical', agent: 'rob' },
+  { label: 'Content Audit', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan', special: 'page-audit' },
+  { label: 'Schema Markup', desc: 'Schema markup detection & generation', command: 'schema', agent: 'leo' },
+  { label: 'Image SEO', desc: 'Image optimization analysis', command: 'images', agent: 'craig' },
+  { label: 'Sitemap', desc: 'Sitemap analysis or generation', command: 'sitemap', agent: 'alex' },
+  { label: 'GEO / AI Search', desc: 'AI Overviews / GEO optimization', command: 'geo', agent: 'leo' },
+  { label: 'SEO Plan', desc: 'Strategic SEO planning', command: 'plan', agent: 'ewan' },
+  { label: 'Programmatic', desc: 'Programmatic SEO analysis', command: 'programmatic', agent: 'alex' },
+  { label: 'Competitors', desc: 'Competitor comparison pages', command: 'competitor-pages', agent: 'craig' },
+  { label: 'Hreflang', desc: 'Hreflang/i18n audit', command: 'hreflang', agent: 'ken' },
 ];
 
 const IDLE_CHATTER = [
@@ -95,6 +99,7 @@ export default function App() {
   const [serverConnected, setServerConnected] = useState(false);
   const [configTask, setConfigTask] = useState(null);
   const [showPageAudit, setShowPageAudit] = useState(false);
+  const [activeSeoTool, setActiveSeoTool] = useState(null);
   const [auditHistory, setAuditHistory] = useState([]);
   const loopRef = useRef(null);
   const uptimeRef = useRef(null);
@@ -590,14 +595,18 @@ export default function App() {
           </div>
         </div>
 
-        {/* SEO Task Quick Actions */}
+        {/* SEO Tool Quick Actions */}
         <div className="seo-task-buttons">
           {SEO_TASK_BUTTONS.map((btn) => (
             <button
               key={btn.label}
-              className={`seo-task-btn${btn.special === 'page-audit' ? ' seo-task-btn--audit' : ''}`}
+              className={`seo-task-btn${btn.special === 'page-audit' ? ' seo-task-btn--audit' : btn.command ? ' seo-task-btn--tool' : ''}`}
               title={btn.desc}
-              onClick={() => btn.special === 'page-audit' ? setShowPageAudit(true) : setConfigTask(btn)}
+              onClick={() => {
+                if (btn.special === 'page-audit') setShowPageAudit(true);
+                else if (btn.command) setActiveSeoTool(btn);
+                else setConfigTask(btn);
+              }}
             >
               {btn.label}
             </button>
@@ -657,6 +666,28 @@ export default function App() {
           onClearPreload={() => { window._preloadAudit = null; }}
           onAuditComplete={(audit) => {
             setAuditHistory(prev => [{ ...audit, _savedAt: new Date().toISOString() }, ...prev]);
+          }}
+          onAgentState={(agentId, state) => {
+            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));
+          }}
+          onAgentSpeech={(agentId, text) => {
+            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, speechBubble: text } : a));
+            if (text) setTimeout(() => setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, speechBubble: null } : a)), 4000);
+          }}
+          onAgentComplete={(agentId) => {
+            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 } : a));
+            setTimeout(() => setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state: AGENT_STATES.IDLE } : a)), 3000);
+          }}
+          addActivity={addActivity}
+        />
+      )}
+
+      {activeSeoTool && (
+        <SeoToolModal
+          tool={activeSeoTool}
+          onClose={() => setActiveSeoTool(null)}
+          onComplete={(result) => {
+            setAuditHistory(prev => [{ ...result, _savedAt: new Date().toISOString() }, ...prev]);
           }}
           onAgentState={(agentId, state) => {
             setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));

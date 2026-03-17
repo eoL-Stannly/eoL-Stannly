@@ -2859,6 +2859,16 @@ body {
   box-shadow: 0 0 8px rgba(240, 141, 52, 0.3);
 }
 
+.seo-task-btn--tool {
+  background: rgba(46, 196, 243, 0.06) !important;
+  border: 0.8px solid rgba(46, 196, 243, 0.2) !important;
+}
+.seo-task-btn--tool:hover {
+  background: rgba(46, 196, 243, 0.15) !important;
+  border-color: var(--ayima-accent) !important;
+  box-shadow: 0 0 6px rgba(46, 196, 243, 0.2);
+}
+
 .page-audit-modal {
   max-width: 480px;
 }

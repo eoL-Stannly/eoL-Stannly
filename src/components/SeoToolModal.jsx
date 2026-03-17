@@ -1,0 +1,279 @@
+import React, { useState, useRef, useEffect } from 'react';
+
+const PRIORITY_COLORS = { Critical: '#D34F2D', High: '#F08D34', Medium: '#F7CC76', Low: '#20C997' };
+
+function ScoreBar({ label, value, max = 100 }) {
+  const pct = max > 0 ? (value / max) * 100 : 0;
+  const color = pct >= 70 ? '#20C997' : pct >= 50 ? '#F7CC76' : pct >= 30 ? '#F08D34' : '#D34F2D';
+  return (
+    <div style={{ marginBottom: '6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '4.5px', marginBottom: '2px' }}>
+        <span>{label}</span><span style={{ color, fontWeight: 'bold' }}>{value}/{max}</span>
+      </div>
+      <div style={{ height: '4px', background: '#162240', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '2px' }} />
+      </div>
+    </div>
+  );
+}
+
+function JsonViewer({ data, depth = 0 }) {
+  if (!data || typeof data !== 'object') return <span style={{ color: '#F7CC76' }}>{JSON.stringify(data)}</span>;
+  if (Array.isArray(data)) {
+    if (data.length === 0) return <span style={{ color: '#666' }}>[]</span>;
+    return data.map((item, i) => (
+      <div key={i} style={{ marginLeft: depth > 0 ? '12px' : 0, padding: '3px 0', borderBottom: '1px solid #0C1526' }}>
+        {typeof item === 'object' ? <JsonViewer data={item} depth={depth + 1} /> : <span style={{ color: '#ccc' }}>{String(item)}</span>}
+      </div>
+    ));
+  }
+  return Object.entries(data).filter(([k]) => !k.startsWith('_')).map(([key, val]) => (
+    <div key={key} style={{ marginLeft: depth > 0 ? '12px' : 0, padding: '2px 0' }}>
+      <span style={{ color: '#2EC4F3', fontSize: '4.5px' }}>{key}: </span>
+      {typeof val === 'object' && val !== null ? <JsonViewer data={val} depth={depth + 1} /> : <span style={{ color: '#ccc', fontSize: '4.5px' }}>{String(val)}</span>}
+    </div>
+  ));
+}
+
+export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, onAgentSpeech, onAgentComplete, addActivity }) {
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [result, setResult] = useState(null);
+  const [showExport, setShowExport] = useState(false);
+  const inputRef = useRef(null);
+  const resultsRef = useRef(null);
+  const pf = '"Press Start 2P", monospace';
+  const agent = tool.agent || 'ewan';
+  const agentName = { rob: 'Rob', craig: 'Craig', leo: 'Leo', ewan: 'Ewan', mya: 'Mya', alex: 'Alex', ken: 'Ken' }[agent] || 'Ewan';
+
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
+  useEffect(() => { if (result && resultsRef.current) resultsRef.current.scrollTop = 0; }, [result]);
+
+  const runTool = async () => {
+    let testUrl = url.trim();
+    if (!testUrl) { setError('Enter a URL'); return; }
+    if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) testUrl = 'https://' + testUrl;
+    try { new URL(testUrl); } catch { setError('Invalid URL format'); return; }
+
+    setError(''); setLoading(true); setResult(null); setProgress('Initialising...');
+
+    const agentTimers = [];
+    if (onAgentState) {
+      agentTimers.push(setTimeout(() => { onAgentState('mike', 'thinking'); if (onAgentSpeech) onAgentSpeech('mike', `${tool.label} request...`); if (addActivity) addActivity('mike', 'Mike', `Triaging: ${tool.label}`, 'agent_working'); }, 500));
+      agentTimers.push(setTimeout(() => { onAgentState('mike', 'idle'); onAgentState(agent, 'thinking'); if (onAgentSpeech) onAgentSpeech(agent, 'Picking this up...'); if (addActivity) addActivity('mike', 'Mike', `Delegated to ${agentName}`, 'agent_assigned'); }, 3000));
+      agentTimers.push(setTimeout(() => { onAgentState(agent, 'working'); if (onAgentSpeech) onAgentSpeech(agent, 'Crawling the page...'); }, 7000));
+      agentTimers.push(setTimeout(() => { if (onAgentSpeech) onAgentSpeech(agent, 'Deep in analysis...'); }, 18000));
+      agentTimers.push(setTimeout(() => { if (onAgentSpeech) onAgentSpeech(agent, 'Compiling results...'); }, 35000));
+    }
+    const progressTimers = [
+      setTimeout(() => setProgress('Searching for page...'), 2000),
+      setTimeout(() => setProgress('Crawling content...'), 6000),
+      setTimeout(() => setProgress(`Running ${tool.label}...`), 12000),
+      setTimeout(() => setProgress('Analysing data...'), 20000),
+      setTimeout(() => setProgress('Generating results...'), 30000),
+      setTimeout(() => setProgress('Finalising...'), 42000),
+      setTimeout(() => setProgress('Almost there...'), 55000),
+    ];
+    const allTimers = [...progressTimers, ...agentTimers];
+
+    try {
+      const res = await fetch('/api/seo-tool', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: tool.command, url: testUrl }),
+      });
+      const data = await res.json();
+      allTimers.forEach(clearTimeout);
+
+      if (data.error) {
+        setError(data.error); setLoading(false);
+        if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
+        return;
+      }
+
+      setResult(data);
+      if (onComplete) onComplete(data);
+      if (onAgentComplete) onAgentComplete(agent);
+      if (onAgentSpeech) onAgentSpeech(agent, `${tool.label} done! ✓`);
+      if (addActivity) addActivity(agent, agentName, `Completed: ${tool.label} for ${testUrl}`, 'task_completed');
+    } catch {
+      allTimers.forEach(clearTimeout);
+      setError('Network error.');
+      if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
+    }
+    setLoading(false); setProgress('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !loading) { e.preventDefault(); runTool(); }
+    if (e.key === 'Escape' && !loading) onClose();
+  };
+
+  const exportAs = (format) => {
+    if (!result) return;
+    const domain = (() => { try { return new URL(result.url || url).hostname.replace('www.', ''); } catch { return 'audit'; } })();
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `seo-${tool.command}-${domain}-${date}`;
+
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+      dl(blob, filename + '.json');
+    } else if (format === 'md') {
+      let md = `# ${tool.label}\n\n**URL:** ${result.url || url}\n**Date:** ${date}\n**Command:** /seo ${tool.command}\n\n`;
+      if (result.summary) md += `## Summary\n\n${result.summary}\n\n`;
+      if (result.issues?.length) {
+        md += `## Issues (${result.issues.length})\n\n| Priority | Issue | Category |\n|---|---|---|\n`;
+        result.issues.forEach(i => { md += `| ${i.priority} | ${i.issue} | ${i.category || ''} |\n`; });
+        md += '\n';
+      }
+      if (result.recommendations?.length) {
+        md += `## Recommendations\n\n`;
+        result.recommendations.forEach((r, i) => { md += `### ${i+1}. [${r.priority}] ${r.title}\n\n${r.description}\n\n`; });
+      }
+      if (result._meta) md += `---\n*${result._meta.model} · ${result._meta.inputTokens} in / ${result._meta.outputTokens} out*\n`;
+      const blob = new Blob([md], { type: 'text/markdown' });
+      dl(blob, filename + '.md');
+    }
+    setShowExport(false);
+  };
+
+  const dl = (blob, name) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  // Render scores from result
+  const renderScores = () => {
+    const scores = [];
+    const scoreKeys = ['overallScore', 'technicalScore', 'contentQualityScore', 'aiCitationReadiness', 'schemaScore', 'imageScore', 'sitemapScore', 'geoScore', 'hreflangScore'];
+    const labels = { overallScore: 'Overall', technicalScore: 'Technical', contentQualityScore: 'Content', aiCitationReadiness: 'AI Citation', schemaScore: 'Schema', imageScore: 'Images', sitemapScore: 'Sitemap', geoScore: 'GEO', hreflangScore: 'Hreflang' };
+    scoreKeys.forEach(k => { if (typeof result[k] === 'number') scores.push({ label: labels[k] || k, value: result[k] }); });
+    if (result.eeat?.overall) scores.push({ label: 'E-E-A-T', value: result.eeat.overall });
+    if (result.scores) Object.entries(result.scores).forEach(([k, v]) => { if (typeof v === 'number') scores.push({ label: k, value: v }); });
+    return scores;
+  };
+
+  return (
+    <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.88)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}
+      onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}>
+      <div style={{ background:'#091E2A', border:'2px solid #144B63', borderRadius:'4px', width: result ? '700px' : '480px', maxWidth:'95vw', maxHeight:'90vh', display:'flex', flexDirection:'column', fontFamily:pf, transition:'width 0.3s' }}
+        onClick={(e) => e.stopPropagation()}>
+
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 16px 10px', borderBottom:'1px solid #144B63' }}>
+          <div style={{ fontSize:'8px', color:'#2EC4F3', display:'flex', alignItems:'center', gap:'6px' }}>
+            <span style={{ fontSize:'12px' }}>🔍</span> {tool.label.toUpperCase()}
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'1px solid #444', color:'#999', fontFamily:pf, fontSize:'6px', cursor:'pointer', padding:'3px 6px', borderRadius:'2px' }}>ESC</button>
+        </div>
+
+        <div style={{ padding:'16px', overflowY:'auto', flex:1 }} ref={resultsRef}>
+          {!result && (<>
+            <div style={{ fontSize:'5px', color:'#999', lineHeight:'1.8', marginBottom:'14px' }}>
+              {tool.desc}<br/>Powered by Claude AI · Agent: {agentName}
+            </div>
+            <label style={{ fontSize:'5px', color:'#2EC4F3', display:'block', marginBottom:'6px' }}>TARGET URL</label>
+            <div style={{ display:'flex', alignItems:'center', background:'#0A1E2A', border:'1.6px solid #1A4B63', borderRadius:'3px', padding:'2px' }}>
+              <span style={{ fontSize:'6px', color:'#2EC4F3', padding:'4px 6px', opacity:0.6 }}>{'>'}</span>
+              <input ref={inputRef} style={{ flex:1, background:'transparent', border:'none', outline:'none', color:'#F0F4F7', fontFamily:pf, fontSize:'6px', padding:'6px 4px' }}
+                type="text" value={url} onChange={(e) => { setUrl(e.target.value); setError(''); }} onKeyDown={handleKeyDown}
+                placeholder="https://example.com/page" disabled={loading} />
+            </div>
+            {error && <div style={{ fontSize:'5px', color:'#D34F2D', marginTop:'8px' }}>⚠ {error}</div>}
+            {loading ? (
+              <div style={{ fontSize:'5px', color:'#2EC4F3', textAlign:'center', padding:'24px 0' }}>
+                <div style={{ marginBottom:'8px' }}>⏳ {progress}</div>
+                <div style={{ height:'3px', background:'#144B63', borderRadius:'2px', overflow:'hidden' }}>
+                  <div style={{ height:'100%', background:'#2EC4F3', borderRadius:'2px', animation:'auditPulse 2s ease-in-out infinite', width:'60%' }} />
+                </div>
+                <style>{`@keyframes auditPulse{0%,100%{opacity:.4;width:30%}50%{opacity:1;width:80%}}`}</style>
+                <div style={{ marginTop:'8px', fontSize:'4px', color:'#666' }}>{agentName} is working on this...</div>
+              </div>
+            ) : (
+              <button onClick={runTool} disabled={!url.trim()} style={{ fontFamily:pf, fontSize:'6px', padding:'8px 16px', border:'none', borderRadius:'3px', cursor:'pointer', marginTop:'12px', background:'#2EC4F3', color:'#0A1E2A', width:'100%', opacity: url.trim() ? 1 : 0.4, fontWeight:'bold' }}>RUN /SEO {tool.command.toUpperCase()}</button>
+            )}
+          </>)}
+
+          {result && (
+            <div style={{ fontSize:'5px', color:'#F0F4F7', lineHeight:'1.7' }}>
+              {/* Actions bar */}
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'14px' }}>
+                <button onClick={() => setResult(null)} style={{ background:'none', border:'1px solid #144B63', color:'#2EC4F3', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>← NEW</button>
+                <div style={{ position:'relative' }}>
+                  <button onClick={() => setShowExport(!showExport)} style={{ background:'none', border:'1px solid #7a4520', color:'#F08D34', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>⬇ EXPORT ▾</button>
+                  {showExport && (
+                    <div style={{ position:'absolute', right:0, top:'100%', marginTop:'4px', background:'#091E2A', border:'1px solid #144B63', borderRadius:'3px', zIndex:100, minWidth:'100px', overflow:'hidden' }}>
+                      {[{ label:'JSON', fn:() => exportAs('json') }, { label:'Markdown', fn:() => exportAs('md') }].map(opt => (
+                        <button key={opt.label} onClick={opt.fn} style={{ display:'block', width:'100%', textAlign:'left', background:'none', border:'none', borderBottom:'1px solid #0C1526', color:'#F0F4F7', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'6px 10px' }}
+                          onMouseOver={e => e.target.style.background='#162240'} onMouseOut={e => e.target.style.background='none'}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta */}
+              <div style={{ color:'#999', marginBottom:'4px' }}>URL: <span style={{ color:'#2EC4F3' }}>{result.url || url}</span></div>
+              <div style={{ color:'#999', marginBottom:'12px' }}>{result.pageType || ''} {result.industry ? `· ${result.industry}` : ''}</div>
+
+              {/* Scores */}
+              {renderScores().length > 0 && (<>
+                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'12px 0 8px' }}>// SCORES</div>
+                {renderScores().map(s => <ScoreBar key={s.label} label={s.label} value={s.value} />)}
+              </>)}
+
+              {/* Issues */}
+              {result.issues?.length > 0 && (<>
+                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// ISSUES ({result.issues.length})</div>
+                {result.issues.map((issue, i) => (
+                  <div key={i} style={{ display:'flex', gap:'8px', padding:'4px 0', borderBottom:'1px solid #162240' }}>
+                    <span style={{ color: PRIORITY_COLORS[issue.priority] || '#999', fontWeight:'bold', minWidth:'45px', fontSize:'4.5px' }}>{issue.priority}</span>
+                    <span style={{ color:'#ccc', flex:1, fontSize:'4.5px' }}>{issue.issue}</span>
+                    <span style={{ color:'#666', fontSize:'4px' }}>{issue.category || ''}</span>
+                  </div>
+                ))}
+              </>)}
+
+              {/* Recommendations */}
+              {result.recommendations?.length > 0 && (<>
+                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// RECOMMENDATIONS</div>
+                {result.recommendations.map((rec, i) => (
+                  <div key={i} style={{ padding:'6px 8px', marginBottom:'4px', background:'#0C1526', borderLeft:`2px solid ${PRIORITY_COLORS[rec.priority]||'#444'}`, borderRadius:'2px' }}>
+                    <div style={{ fontSize:'4.5px' }}><span style={{ color:PRIORITY_COLORS[rec.priority], fontWeight:'bold' }}>{rec.priority}</span> <span style={{ color:'#F0F4F7', fontWeight:'bold' }}>{rec.title}</span></div>
+                    <div style={{ color:'#999', fontSize:'4.5px', marginTop:'2px' }}>{rec.description}</div>
+                  </div>
+                ))}
+              </>)}
+
+              {/* Summary */}
+              {result.summary && (<>
+                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// SUMMARY</div>
+                <div style={{ background:'#0C1526', border:'1px solid #222', borderRadius:'3px', padding:'8px', color:'#ccc', lineHeight:'2', fontSize:'5px' }}>{result.summary}</div>
+              </>)}
+
+              {/* Full data viewer */}
+              <details style={{ marginTop:'16px' }}>
+                <summary style={{ color:'#666', fontSize:'4.5px', cursor:'pointer' }}>View raw data</summary>
+                <div style={{ marginTop:'6px', padding:'8px', background:'#0C1526', borderRadius:'3px', fontSize:'4.5px', maxHeight:'300px', overflowY:'auto' }}>
+                  <JsonViewer data={result} />
+                </div>
+              </details>
+
+              {/* Meta */}
+              {result._meta && <div style={{ color:'#444', fontSize:'4px', marginTop:'12px', textAlign:'right' }}>{result._meta.model} · {result._meta.inputTokens?.toLocaleString()} in / {result._meta.outputTokens?.toLocaleString()} out · {result._meta.turns} turns · {result._meta.analysedAt?.split('T')[0]}</div>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
