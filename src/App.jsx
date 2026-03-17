@@ -95,6 +95,7 @@ export default function App() {
   const [serverConnected, setServerConnected] = useState(false);
   const [configTask, setConfigTask] = useState(null);
   const [showPageAudit, setShowPageAudit] = useState(false);
+  const [auditHistory, setAuditHistory] = useState([]);
   const loopRef = useRef(null);
   const uptimeRef = useRef(null);
   const idleLoopRef = useRef(null);
@@ -608,6 +609,10 @@ export default function App() {
             Tasks
             <span className="tab-count">{tasks.length}</span>
           </button>
+          <button className={`tab-btn ${showPanel === 'reports' ? 'tab-active' : ''}`} onClick={() => setShowPanel('reports')}>
+            Reports
+            {auditHistory.length > 0 && <span className="tab-count">{auditHistory.length}</span>}
+          </button>
           <button className={`tab-btn ${showPanel === 'knowledge' ? 'tab-active' : ''}`} onClick={() => setShowPanel('knowledge')}>
             Knowledge Base
           </button>
@@ -622,6 +627,8 @@ export default function App() {
             <KnowledgePanel />
           ) : showPanel === 'activity' ? (
             <ActivityFeed activities={activities} />
+          ) : showPanel === 'reports' ? (
+            <AuditReportsPanel history={auditHistory} onViewReport={(audit) => { setShowPageAudit(true); window._preloadAudit = audit; }} />
           ) : (
             <TaskPanel tasks={tasks} onSubmitTask={submitTask} />
           )}
@@ -646,6 +653,11 @@ export default function App() {
       {showPageAudit && (
         <PageContentAuditModal
           onClose={() => setShowPageAudit(false)}
+          preloadAudit={window._preloadAudit || null}
+          onClearPreload={() => { window._preloadAudit = null; }}
+          onAuditComplete={(audit) => {
+            setAuditHistory(prev => [{ ...audit, _savedAt: new Date().toISOString() }, ...prev]);
+          }}
           onAgentState={(agentId, state) => {
             setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));
           }}
@@ -696,6 +708,51 @@ function AgentDetail({ agent, onClose }) {
             <span key={c} className="skill-tag">{c.replace(/_/g, ' ')}</span>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AuditReportsPanel({ history, onViewReport }) {
+  const sc = (s) => s >= 70 ? '#20C997' : s >= 50 ? '#F7CC76' : s >= 30 ? '#F08D34' : '#D34F2D';
+  return (
+    <div className="task-panel">
+      <h3 className="panel-title"><span className="panel-icon">📊</span>Audit Reports</h3>
+      <div className="task-list">
+        {history.length === 0 ? (
+          <div className="task-empty">No audits completed yet. Run a Page Content Audit to see reports here.</div>
+        ) : (
+          history.map((audit, i) => {
+            const domain = (() => { try { return new URL(audit.url).hostname.replace('www.', ''); } catch { return 'unknown'; } })();
+            const time = new Date(audit._savedAt || audit._meta?.analysedAt);
+            const timeStr = time.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+            const dateStr = time.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+            return (
+              <div key={`${audit.url}-${i}`} style={{
+                padding: '8px 10px', borderBottom: '1px solid #0C1526', cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#162240'}
+              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+              onClick={() => onViewReport(audit)}
+              >
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'3px' }}>
+                  <span style={{ fontFamily:'var(--pixel-font)', fontSize:'5px', color:'#2EC4F3' }}>{domain}</span>
+                  <span style={{ fontFamily:'var(--pixel-font)', fontSize:'4px', color:'#666' }}>{dateStr} {timeStr}</span>
+                </div>
+                <div style={{ fontFamily:'var(--pixel-font)', fontSize:'4px', color:'#999', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {audit.url}
+                </div>
+                <div style={{ display:'flex', gap:'8px', fontFamily:'var(--pixel-font)', fontSize:'4px' }}>
+                  <span>Content: <span style={{ color: sc(audit.contentQualityScore || 0), fontWeight:'bold' }}>{audit.contentQualityScore || 0}</span></span>
+                  <span>E-E-A-T: <span style={{ color: sc(audit.eeat?.overall || 0), fontWeight:'bold' }}>{audit.eeat?.overall || 0}</span></span>
+                  <span>AI: <span style={{ color: sc(audit.aiCitationReadiness || 0), fontWeight:'bold' }}>{audit.aiCitationReadiness || 0}</span></span>
+                  <span style={{ color:'#666' }}>{(audit.issues || []).length} issues</span>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

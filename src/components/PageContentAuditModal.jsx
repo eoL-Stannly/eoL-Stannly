@@ -82,18 +82,19 @@ function generateReportHtml(audit) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>SEO Audit - ${audit.url}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#070D18;color:#FAF9F5;font-family:'Courier New',monospace;font-size:11px;padding:40px}h1{color:#0DCAF0;font-size:22px;margin-bottom:6px}h2{color:#0047AB;font-size:15px;margin:24px 0 10px;border-bottom:1px solid #222;padding-bottom:4px}.meta{color:#999;font-size:10px;margin-bottom:20px}.meta span{margin-right:16px}.scores{display:flex;gap:24px;margin:16px 0 24px}.score-box{text-align:center}.score-num{font-size:28px;font-weight:bold}.score-label{font-size:9px;color:#999;margin-top:2px}table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:10px}th{background:#0047AB;color:#fff;text-align:left;padding:6px 8px;font-size:9px}td{padding:5px 8px;border-bottom:1px solid #222;vertical-align:top}tr:nth-child(even) td{background:#0C1526}.summary{background:#0C1526;border:1px solid #222;border-radius:4px;padding:12px;margin:16px 0;line-height:1.6}@media print{body{padding:20px}}</style></head><body><h1>SEO CONTENT & E-E-A-T ANALYSIS</h1><div class="meta"><span>URL: ${audit.url}</span><span>Date: ${new Date().toISOString().split('T')[0]}</span><span>Type: ${audit.pageType||''}</span></div><div class="scores"><div class="score-box"><div class="score-num" style="color:${pc(audit.contentQualityScore)}">${audit.contentQualityScore}</div><div class="score-label">Content Quality</div></div><div class="score-box"><div class="score-num" style="color:${pc(audit.aiCitationReadiness)}">${audit.aiCitationReadiness}</div><div class="score-label">AI Citation</div></div><div class="score-box"><div class="score-num" style="color:${pc(audit.eeat?.overall||0)}">${audit.eeat?.overall||0}</div><div class="score-label">E-E-A-T</div></div></div><h2>// E-E-A-T BREAKDOWN</h2><table><tr><th>Factor</th><th>Score</th><th>Signals</th></tr><tr><td>Experience</td><td style="color:${pc((audit.eeat?.experience?.score||0)*4)}">${audit.eeat?.experience?.score||0}/25</td><td>${audit.eeat?.experience?.signals||''}</td></tr><tr><td>Expertise</td><td style="color:${pc((audit.eeat?.expertise?.score||0)*4)}">${audit.eeat?.expertise?.score||0}/25</td><td>${audit.eeat?.expertise?.signals||''}</td></tr><tr><td>Authoritativeness</td><td style="color:${pc((audit.eeat?.authoritativeness?.score||0)*4)}">${audit.eeat?.authoritativeness?.score||0}/25</td><td>${audit.eeat?.authoritativeness?.signals||''}</td></tr><tr><td>Trustworthiness</td><td style="color:${pc((audit.eeat?.trustworthiness?.score||0)*4)}">${audit.eeat?.trustworthiness?.score||0}/25</td><td>${audit.eeat?.trustworthiness?.signals||''}</td></tr></table><h2>// ON-PAGE SEO</h2><table><tr><th>Element</th><th>Value</th><th>Status</th></tr><tr><td>Title</td><td>${audit.title?.value||''} (${audit.title?.length||0}c)</td><td>${audit.title?.status||''}</td></tr><tr><td>Meta Desc</td><td>${(audit.metaDescription?.value||'').substring(0,80)}... (${audit.metaDescription?.length||0}c)</td><td>${audit.metaDescription?.status||''}</td></tr><tr><td>H1</td><td>${audit.h1?.value||''}</td><td>${audit.h1?.status||''}</td></tr><tr><td>Canonical</td><td>${audit.canonical?.value||''}</td><td>${audit.canonical?.status||''}</td></tr><tr><td>Schema</td><td>${audit.schema?.count||0} blocks</td><td>${audit.schema?.status||''}</td></tr><tr><td>Hreflang</td><td>${audit.hreflang?.count||0} tags</td><td>${audit.hreflang?.status||''}</td></tr><tr><td>OG Tags</td><td>${audit.ogUrl?.note||''}</td><td>${audit.ogUrl?.status||''}</td></tr></table><h2>// ISSUES FOUND</h2><table><tr><th>Priority</th><th>Issue</th><th>Category</th></tr>${issueRows}</table><h2>// RECOMMENDATIONS</h2><table><tr><th>Priority</th><th>Recommendation</th></tr>${recRows}</table><h2>// SUMMARY</h2><div class="summary">${audit.summary||''}</div></body></html>`;
 }
 
-export default function PageContentAuditModal({ onClose, onAgentState, onAgentSpeech, onAgentComplete, addActivity }) {
+export default function PageContentAuditModal({ onClose, onAgentState, onAgentSpeech, onAgentComplete, addActivity, onAuditComplete, preloadAudit, onClearPreload }) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
-  const [audit, setAudit] = useState(null);
+  const [audit, setAudit] = useState(preloadAudit || null);
   const [auditCount, setAuditCount] = useState(0);
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
 
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
+  useEffect(() => { if (!preloadAudit) setTimeout(() => inputRef.current?.focus(), 100); }, []);
   useEffect(() => { if (audit && resultsRef.current) resultsRef.current.scrollTop = 0; }, [audit]);
+  useEffect(() => { if (onClearPreload) onClearPreload(); }, []);
 
   const runAudit = async () => {
     let testUrl = url.trim();
@@ -168,6 +169,9 @@ export default function PageContentAuditModal({ onClose, onAgentState, onAgentSp
 
       setAudit(data);
       setAuditCount(prev => prev + 1);
+
+      // Save to report history
+      if (onAuditComplete) onAuditComplete(data);
 
       // Ewan celebrates completion
       if (onAgentComplete) onAgentComplete('ewan');
