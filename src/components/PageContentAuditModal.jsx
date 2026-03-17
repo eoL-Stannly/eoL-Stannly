@@ -27,6 +27,54 @@ function PriorityBadge({ priority }) {
   return <span style={{ fontSize: '4.5px', color, fontFamily: 'var(--pixel-font)', fontWeight: 'bold' }}>{priority.toUpperCase()}</span>;
 }
 
+function generateReportMarkdown(audit) {
+  const e = audit.eeat || {};
+  const cm = audit.contentMetrics || {};
+  let md = `# SEO CONTENT & E-E-A-T ANALYSIS\n\n`;
+  md += `**URL:** ${audit.url}\n**Date:** ${new Date().toISOString().split('T')[0]}\n**Page Type:** ${audit.pageType || 'Unknown'}\n**Industry:** ${audit.industry || 'Unknown'}\n\n`;
+  md += `---\n\n## Score Summary\n\n`;
+  md += `| Metric | Score | Rating |\n|--------|-------|--------|\n`;
+  md += `| Content Quality | ${audit.contentQualityScore || 0}/100 | ${audit.contentQualityScore >= 70 ? 'Strong' : audit.contentQualityScore >= 50 ? 'Moderate' : audit.contentQualityScore >= 30 ? 'Weak' : 'Very Low'} |\n`;
+  md += `| AI Citation Readiness | ${audit.aiCitationReadiness || 0}/100 | ${audit.aiCitationReadiness >= 70 ? 'Strong' : audit.aiCitationReadiness >= 50 ? 'Moderate' : audit.aiCitationReadiness >= 30 ? 'Weak' : 'Very Low'} |\n`;
+  md += `| E-E-A-T Overall | ${e.overall || 0}/100 | ${e.rating || 'N/A'} |\n\n`;
+  md += `## E-E-A-T Breakdown\n\n`;
+  md += `| Factor | Score | Signals |\n|--------|-------|---------|\n`;
+  ['experience','expertise','authoritativeness','trustworthiness'].forEach(f => {
+    const d = e[f];
+    if (d) md += `| ${f.charAt(0).toUpperCase()+f.slice(1)} | ${d.score}/25 | ${d.signals} |\n`;
+  });
+  md += `\n## On-Page SEO\n\n`;
+  md += `| Element | Value | Status |\n|---------|-------|--------|\n`;
+  md += `| Title | ${audit.title?.value || ''} (${audit.title?.length || 0}c) | ${audit.title?.status || ''} |\n`;
+  md += `| Meta Description | ${(audit.metaDescription?.value || '').substring(0,60)}... (${audit.metaDescription?.length || 0}c) | ${audit.metaDescription?.status || ''} |\n`;
+  md += `| H1 | ${audit.h1?.value || ''} | ${audit.h1?.status || ''} |\n`;
+  md += `| Canonical | ${audit.canonical?.value || ''} | ${audit.canonical?.status || ''} |\n`;
+  md += `| Schema | ${audit.schema?.count || 0} LD+JSON | ${audit.schema?.status || ''} |\n`;
+  md += `| Hreflang | ${audit.hreflang?.count || 0} tags | ${audit.hreflang?.status || ''} |\n`;
+  md += `| OG Tags | ${audit.ogUrl?.note || ''} | ${audit.ogUrl?.status || ''} |\n\n`;
+  md += `## Content Metrics\n\n`;
+  md += `- **Word Count:** ${cm.wordCount || 'N/A'}\n`;
+  md += `- **Editorial Content:** ${cm.editorialContent || 'N/A'}\n`;
+  md += `- **Internal Links:** ${cm.internalLinks || 'N/A'}\n`;
+  md += `- **External Links:** ${cm.externalLinks || 'N/A'}\n`;
+  md += `- **Images:** ${cm.images?.total || 0} total, ${cm.images?.withAlt || 0} with alt, ${cm.images?.withoutAlt || 0} without\n\n`;
+  if ((audit.issues || []).length > 0) {
+    md += `## Issues Found\n\n`;
+    md += `| Priority | Issue | Category |\n|----------|-------|----------|\n`;
+    (audit.issues || []).forEach(i => { md += `| ${i.priority} | ${i.issue} | ${i.category} |\n`; });
+    md += `\n`;
+  }
+  if ((audit.recommendations || []).length > 0) {
+    md += `## Recommendations\n\n`;
+    (audit.recommendations || []).forEach((r, i) => {
+      md += `### ${i+1}. [${r.priority}] ${r.title}\n\n${r.description}\n\n`;
+    });
+  }
+  md += `## Summary\n\n${audit.summary || ''}\n`;
+  if (audit._meta) md += `\n---\n*${audit._meta.model} · ${audit._meta.inputTokens?.toLocaleString()} in / ${audit._meta.outputTokens?.toLocaleString()} out · ${audit._meta.analysedAt?.split('T')[0]}*\n`;
+  return md;
+}
+
 function generateReportHtml(audit) {
   const pc = (s) => s >= 70 ? '#20C997' : s >= 50 ? '#F7CC76' : s >= 30 ? '#F08D34' : '#D34F2D';
   const issueRows = (audit.issues || []).map(i => `<tr><td style="color:${PRIORITY_COLORS[i.priority]||'#999'};font-weight:bold;width:80px">${i.priority}</td><td>${i.issue}</td><td style="width:70px">${i.category}</td></tr>`).join('');
@@ -85,19 +133,52 @@ export default function PageContentAuditModal({ onClose }) {
     if (e.key === 'Escape') onClose();
   };
 
-  const downloadReport = () => {
-    if (!audit) return;
-    const html = generateReportHtml(audit);
-    const blob = new Blob([html], { type: 'text/html' });
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+
+  const getDomain = () => {
+    try { return new URL(audit.url).hostname.replace('www.', ''); } catch { return 'audit'; }
+  };
+
+  const triggerDownload = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
     const a = document.createElement('a');
-    const domain = new URL(audit.url).hostname.replace('www.', '');
     a.href = URL.createObjectURL(blob);
-    a.download = `seo-audit-${domain}-${new Date().toISOString().split('T')[0]}.html`;
+    a.download = filename;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    setShowDownloadMenu(false);
+  };
+
+  const downloadHtml = () => {
+    if (!audit) return;
+    triggerDownload(generateReportHtml(audit), `seo-audit-${getDomain()}-${new Date().toISOString().split('T')[0]}.html`, 'text/html');
+  };
+
+  const downloadMarkdown = () => {
+    if (!audit) return;
+    triggerDownload(generateReportMarkdown(audit), `seo-audit-${getDomain()}-${new Date().toISOString().split('T')[0]}.md`, 'text/markdown');
+  };
+
+  const downloadJson = () => {
+    if (!audit) return;
+    triggerDownload(JSON.stringify(audit, null, 2), `seo-audit-${getDomain()}-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+  };
+
+  const downloadPdf = () => {
+    if (!audit) return;
+    // Open HTML report in new window and trigger print (Save as PDF)
+    const html = generateReportHtml(audit);
+    const printHtml = html.replace('</style>', `@page { size: A4; margin: 20mm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }</style>`);
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(printHtml);
+      w.document.close();
+      setTimeout(() => w.print(), 500);
+    }
+    setShowDownloadMenu(false);
   };
 
   const pf = '"Press Start 2P", monospace';
@@ -158,7 +239,24 @@ export default function PageContentAuditModal({ onClose }) {
             <div style={{ fontSize:'5px', color:'#F0F4F7', lineHeight:'1.7' }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'14px' }}>
                 <button onClick={() => setAudit(null)} style={{ background:'none', border:'1px solid #144B63', color:'#2EC4F3', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>← NEW AUDIT</button>
-                <button onClick={downloadReport} style={{ background:'none', border:'1px solid #7a4520', color:'#F08D34', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>⬇ DOWNLOAD REPORT</button>
+                <div style={{ position:'relative' }}>
+                  <button onClick={() => setShowDownloadMenu(!showDownloadMenu)} style={{ background:'none', border:'1px solid #7a4520', color:'#F08D34', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>⬇ EXPORT ▾</button>
+                  {showDownloadMenu && (
+                    <div style={{ position:'absolute', right:0, top:'100%', marginTop:'4px', background:'#091E2A', border:'1px solid #144B63', borderRadius:'3px', zIndex:100, minWidth:'120px', overflow:'hidden' }}>
+                      {[
+                        { label:'PDF (Print)', icon:'📄', fn: downloadPdf },
+                        { label:'HTML Report', icon:'🌐', fn: downloadHtml },
+                        { label:'Markdown', icon:'📝', fn: downloadMarkdown },
+                        { label:'JSON Data', icon:'🔧', fn: downloadJson },
+                      ].map(opt => (
+                        <button key={opt.label} onClick={opt.fn} style={{ display:'block', width:'100%', textAlign:'left', background:'none', border:'none', borderBottom:'1px solid #0C1526', color:'#F0F4F7', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'6px 10px' }}
+                          onMouseOver={e => e.target.style.background='#162240'} onMouseOut={e => e.target.style.background='none'}>
+                          {opt.icon} {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div style={{ color:'#999', marginBottom:'4px' }}>URL: <span style={{ color:'#2EC4F3' }}>{audit.url}</span></div>
               <div style={{ color:'#999', marginBottom:'12px' }}>{audit.pageType} · {audit.industry}</div>
