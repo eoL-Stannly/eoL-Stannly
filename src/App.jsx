@@ -13,7 +13,7 @@ const SEO_TASK_BUTTONS = [
   { label: 'Full Audit', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob' },
   { label: 'Page Analysis', desc: 'Deep single-page analysis', command: 'page', agent: 'ewan' },
   { label: 'Technical SEO', desc: 'Technical SEO (crawlability, indexability, CWV)', command: 'technical', agent: 'rob' },
-  { label: 'Content Audit', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan', special: 'page-audit' },
+  { label: 'Content Audit', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan' },
   { label: 'Schema Markup', desc: 'Schema markup detection & generation', command: 'schema', agent: 'leo' },
   { label: 'Image SEO', desc: 'Image optimization analysis', command: 'images', agent: 'craig' },
   { label: 'Sitemap', desc: 'Sitemap analysis or generation', command: 'sitemap', agent: 'alex' },
