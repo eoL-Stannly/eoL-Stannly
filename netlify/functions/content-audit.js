@@ -88,22 +88,115 @@ export const handler = async (event) => {
 
   // Step 2: Call Anthropic API (server-side, key never leaves this function)
   const systemPrompt = `You are an expert SEO analyst performing a Page Content & E-E-A-T audit. You receive raw HTML of a web page. Analyse it and return ONLY a JSON object (no markdown fences, no preamble) with this structure:
-{"url":"the URL","pageType":"...","industry":"...","title":{"value":"...","length":0,"status":"...","note":"..."},"metaDescription":{"value":"...","length":0,"status":"...","note":"..."},"h1":{"value":"...","status":"...","note":"..."},"canonical":{"value":"...","status":"...","note":"..."},"ogUrl":{"status":"...","note":"..."},"schema":{"count":0,"types":[],"status":"...","note":"..."},"hreflang":{"count":0,"status":"...","note":"..."},"contentQualityScore":0,"aiCitationReadiness":0,"eeat":{"experience":{"score":0,"signals":"..."},"expertise":{"score":0,"signals":"..."},"authoritativeness":{"score":0,"signals":"..."},"trustworthiness":{"score":0,"signals":"..."},"overall":0,"rating":"..."},"contentMetrics":{},"geoSignals":[],"issues":[],"recommendations":[],"summary":"..."}
 
-RULES: H1 = keyword focused. Missing schema = Medium max. OG tags = Low. Hreflang = Medium. PLP/PDP: no penalty for missing address/policy. Critical = indexing blockers only. Return ONLY valid JSON.`;
+{
+  "url": "the URL",
+  "pageType": "Product Listing Page|Product Detail Page|Blog Post|Homepage|Service Page|Category Page|Other",
+  "industry": "detected industry",
+  "title": { "value": "title tag text", "length": number, "status": "PASS|FAIL|NEEDS WORK", "note": "..." },
+  "metaDescription": { "value": "meta desc text", "length": number, "status": "PASS|FAIL|NEEDS WORK", "note": "..." },
+  "h1": { "value": "H1 text", "status": "PASS|FAIL|NEEDS WORK", "note": "..." },
+  "canonical": { "value": "url or null", "status": "PASS|FAIL|MISSING", "note": "..." },
+  "ogUrl": { "status": "PASS|MISMATCH|MISSING", "note": "..." },
+  "schema": { "count": number, "types": [], "status": "PASS|MISSING", "note": "..." },
+  "hreflang": { "count": number, "status": "PASS|MISSING", "note": "..." },
+  "contentQualityScore": 0-100,
+  "aiCitationReadiness": 0-100,
+  "eeat": {
+    "experience": { "score": 0-25, "signals": "brief description" },
+    "expertise": { "score": 0-25, "signals": "brief description" },
+    "authoritativeness": { "score": 0-25, "signals": "brief description" },
+    "trustworthiness": { "score": 0-25, "signals": "brief description" },
+    "overall": 0-100,
+    "rating": "Strong|Moderate|Weak|Very Low"
+  },
+  "contentMetrics": {
+    "wordCount": number,
+    "editorialContent": "description",
+    "avgSentenceLength": number,
+    "headingStructure": { "h1Count": n, "h2s": ["..."], "h3s": ["..."] },
+    "internalLinks": number,
+    "externalLinks": number,
+    "images": { "total": n, "withAlt": n, "withoutAlt": n, "altQuality": "description" }
+  },
+  "geoSignals": [
+    { "signal": "name", "present": true|false, "impact": "High|Medium|Low" }
+  ],
+  "issues": [
+    { "priority": "Critical|High|Medium|Low", "issue": "description", "category": "Content|E-E-A-T|Images|Schema|Technical|i18n|GEO|Social|Freshness" }
+  ],
+  "recommendations": [
+    { "priority": "Critical|High|Medium|Low", "title": "short title", "description": "actionable detail" }
+  ],
+  "summary": "2-3 sentence executive summary"
+}
+
+RULES:
+- H1 should focus on main target ranking keyword. Do NOT recommend adding modifiers or brand qualifiers.
+- Missing structured data = Medium priority max. LLMs parse front-end content directly.
+- OG tag mismatches = Low priority. Social sharing only.
+- Missing hreflang = Medium unless wrong regional page is ranking.
+- For PLP/PDP: do NOT penalise missing physical address or policy page links. Site-level signals.
+- Critical = blocks indexing or triggers penalties ONLY.
+- Return ONLY valid JSON.`;
 
   try {
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', headers: {'Content-Type': 'application/json','x-api-key': apiKey,'anthropic-version': '2023-06-01'},
-      body: JSON.stringify({model: 'claude-sonnet-4-20250514', max_tokens: 8000, system: systemPrompt, messages: [{ role: 'user', content: `Analyse.\nURL: ${url}\nHTML:\n${pageHtml}` }]}),
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `Analyse this page.\n\nURL: ${url}\n\nHTML:\n${pageHtml}` }],
+      }),
     });
-    if (!claudeRes.ok) { return { statusCode: 502, headers, body: JSON.stringify({ error: 'Analysis service unavailable.' }) }; }
+
+    if (!claudeRes.ok) {
+      const errText = await claudeRes.text();
+      console.error('Anthropic API error:', claudeRes.status, errText);
+      return {
+        statusCode: 502, headers,
+        body: JSON.stringify({ error: 'Analysis service unavailable. Try again shortly.' }),
+      };
+    }
+
     const claudeData = await claudeRes.json();
-    const rawText = claudeData.content?.find(b => b.type === 'text')?.text || '';
+    const textBlock = claudeData.content?.find((b) => b.type === 'text');
+    const rawText = textBlock?.text || '';
+
+    // Parse JSON response
     let audit;
-    try { audit = JSON.parse(rawText.replace(/^```json\s*/m, '').replace(/```\s*$/m, '').trim()); }
-    catch { return { statusCode: 200, headers, body: JSON.stringify({ error: 'Malformed output. Retry.' }) }; }
-    audit._meta = { analysedAt: new Date().toISOString(), model: 'claude-sonnet-4-20250514', inputTokens: claudeData.usage?.input_tokens, outputTokens: claudeData.usage?.output_tokens };
+    try {
+      const clean = rawText.replace(/^```json\s*/m, '').replace(/```\s*$/m, '').trim();
+      audit = JSON.parse(clean);
+    } catch {
+      console.error('JSON parse error. Raw:', rawText.substring(0, 500));
+      return {
+        statusCode: 200, headers,
+        body: JSON.stringify({ error: 'Analysis completed but output was malformed. Retrying may help.', partial: rawText.substring(0, 1000) }),
+      };
+    }
+
+    // Add metadata
+    audit._meta = {
+      analysedAt: new Date().toISOString(),
+      model: 'claude-sonnet-4-20250514',
+      inputTokens: claudeData.usage?.input_tokens || null,
+      outputTokens: claudeData.usage?.output_tokens || null,
+    };
+
     return { statusCode: 200, headers, body: JSON.stringify(audit) };
-  } catch (e) { return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error.' }) }; }
+
+  } catch (e) {
+    console.error('Unexpected error:', e);
+    return {
+      statusCode: 500, headers,
+      body: JSON.stringify({ error: 'Unexpected server error. Try again.' }),
+    };
+  }
 };

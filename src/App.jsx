@@ -3,6 +3,7 @@ import OfficeWorkspace from './components/OfficeWorkspace.jsx';
 import ActivityFeed from './components/ActivityFeed.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import TaskConfigModal from './components/TaskConfigModal.jsx';
+import PageContentAuditModal from './components/PageContentAuditModal.jsx';
 import KnowledgePanel from './components/KnowledgePanel.jsx';
 import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
@@ -16,6 +17,7 @@ const SEO_TASK_BUTTONS = [
   { label: 'Internal Linking', desc: 'Analyse and optimise internal link structure' },
   { label: 'HREFLANG Mapping', desc: 'Map hreflang tags for international SEO targeting' },
   { label: 'Sitemap Production', desc: 'Generate and validate XML sitemaps for the site' },
+  { label: 'Page Content Audit', desc: 'Run E-E-A-T content quality analysis on a URL', special: 'page-audit' },
 ];
 
 const IDLE_CHATTER = [
@@ -92,6 +94,7 @@ export default function App() {
   const [showPanel, setShowPanel] = useState('tasks');
   const [serverConnected, setServerConnected] = useState(false);
   const [configTask, setConfigTask] = useState(null);
+  const [showPageAudit, setShowPageAudit] = useState(false);
   const loopRef = useRef(null);
   const uptimeRef = useRef(null);
   const idleLoopRef = useRef(null);
@@ -591,9 +594,9 @@ export default function App() {
           {SEO_TASK_BUTTONS.map((btn) => (
             <button
               key={btn.label}
-              className="seo-task-btn"
+              className={`seo-task-btn${btn.special === 'page-audit' ? ' seo-task-btn--audit' : ''}`}
               title={btn.desc}
-              onClick={() => setConfigTask(btn)}
+              onClick={() => btn.special === 'page-audit' ? setShowPageAudit(true) : setConfigTask(btn)}
             >
               {btn.label}
             </button>
@@ -637,6 +640,12 @@ export default function App() {
             setConfigTask(null);
             submitTask(description, meta);
           }}
+        />
+      )}
+
+      {showPageAudit && (
+        <PageContentAuditModal
+          onClose={() => setShowPageAudit(false)}
         />
       )}
     </div>
