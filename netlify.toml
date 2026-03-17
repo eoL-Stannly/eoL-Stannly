@@ -3,6 +3,13 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[functions]
+  external_node_modules = []
+  node_bundler = "esbuild"
+
+[functions."content-audit"]
+  timeout = 60
+
 [dev]
   command = "npm run dev:client"
   port = 3000

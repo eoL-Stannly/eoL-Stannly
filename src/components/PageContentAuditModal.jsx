@@ -52,13 +52,15 @@ export default function PageContentAuditModal({ onClose }) {
     if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) testUrl = 'https://' + testUrl;
     try { new URL(testUrl); } catch { setError('Invalid URL format'); return; }
 
-    setError(''); setLoading(true); setAudit(null); setProgress('Fetching page...');
+    setError(''); setLoading(true); setAudit(null); setProgress('Searching for page...');
     const timers = [
-      setTimeout(() => setProgress('Analysing HTML structure...'), 2000),
-      setTimeout(() => setProgress('Evaluating E-E-A-T signals...'), 5000),
-      setTimeout(() => setProgress('Scoring content quality...'), 9000),
-      setTimeout(() => setProgress('Generating recommendations...'), 13000),
-      setTimeout(() => setProgress('Almost there...'), 18000),
+      setTimeout(() => setProgress('Crawling page content...'), 3000),
+      setTimeout(() => setProgress('Analysing HTML structure...'), 8000),
+      setTimeout(() => setProgress('Evaluating E-E-A-T signals...'), 15000),
+      setTimeout(() => setProgress('Scoring content quality...'), 22000),
+      setTimeout(() => setProgress('Generating recommendations...'), 30000),
+      setTimeout(() => setProgress('Finalising audit...'), 40000),
+      setTimeout(() => setProgress('Almost there...'), 50000),
     ];
 
     try {
@@ -91,8 +93,11 @@ export default function PageContentAuditModal({ onClose }) {
     const domain = new URL(audit.url).hostname.replace('www.', '');
     a.href = URL.createObjectURL(blob);
     a.download = `seo-audit-${domain}-${new Date().toISOString().split('T')[0]}.html`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
   const pf = '"Press Start 2P", monospace';
