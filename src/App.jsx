@@ -646,6 +646,18 @@ export default function App() {
       {showPageAudit && (
         <PageContentAuditModal
           onClose={() => setShowPageAudit(false)}
+          onAgentState={(agentId, state) => {
+            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));
+          }}
+          onAgentSpeech={(agentId, text) => {
+            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, speechBubble: text } : a));
+            if (text) setTimeout(() => setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, speechBubble: null } : a)), 4000);
+          }}
+          onAgentComplete={(agentId) => {
+            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 } : a));
+            setTimeout(() => setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state: AGENT_STATES.IDLE } : a)), 3000);
+          }}
+          addActivity={addActivity}
         />
       )}
     </div>
