@@ -1,14 +1,12 @@
 // Netlify serverless function: /api/content-audit
 //
-// SECURITY: The Anthropic API key is stored ONLY in Netlify environment
-// variables (server-side). It never reaches the client browser.
-// Set it in Netlify Dashboard > Site > Environment Variables > ANTHROPIC_API_KEY
+// SECURITY: API key stored ONLY in Netlify env vars (server-side).
 //
 // Flow:
-// 1. Client POSTs { url } to /api/content-audit
-// 2. This function fetches the page HTML server-side
-// 3. Sends HTML to Claude API for analysis (key used server-side only)
-// 4. Returns structured JSON audit results to client
+// 1. Client POSTs { url }
+// 2. Claude uses web_search to access and analyse the page itself
+// 3. No server-side HTML fetch — no 4xx issues from bot blocking
+// 4. Returns structured JSON audit
 
 export const handler = async (event) => {
   const headers = {
@@ -26,110 +24,28 @@ export const handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // API key is read from server-side env only — never sent to client
   const apiKey = process.env.Anthropicv2;
   if (!apiKey) {
-    return {
-      statusCode: 500, headers,
-      body: JSON.stringify({ error: 'Server configuration error. Contact administrator.' }),
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error. Contact administrator.' }) };
   }
 
-  // Parse and validate input URL
   let url;
   try {
     const body = JSON.parse(event.body || '{}');
     url = body.url;
     if (!url || typeof url !== 'string') throw new Error('Missing url');
     url = url.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://' + url;
-    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
     new URL(url);
   } catch {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid or missing URL' }) };
   }
 
-  // Step 1: Fetch the target page HTML (server-side, no CORS issues)
-  let pageHtml;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+  const systemPrompt = `You are an expert SEO analyst. You will be given a URL to audit. Use your web_search tool to access and analyse the page. Examine the live page content, meta tags, headings, structure, and all SEO elements.
 
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; AyimaSEOAudit/1.0; +https://ayima.ai)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      redirect: 'follow',
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+Return ONLY a JSON object (no markdown fences, no preamble, no explanation) with this exact structure:
 
-    if (!res.ok) {
-      return {
-        statusCode: 422, headers,
-        body: JSON.stringify({ error: `Target returned HTTP ${res.status}`, url }),
-      };
-    }
-
-    pageHtml = await res.text();
-    // Cap at ~80k chars to stay within token budget
-    if (pageHtml.length > 80000) {
-      pageHtml = pageHtml.substring(0, 80000) + '\n<!-- TRUNCATED -->';
-    }
-  } catch (e) {
-    return {
-      statusCode: 422, headers,
-      body: JSON.stringify({ error: `Could not fetch URL: ${e.message}`, url }),
-    };
-  }
-
-  // Step 2: Call Anthropic API (server-side, key never leaves this function)
-  const systemPrompt = `You are an expert SEO analyst performing a Page Content & E-E-A-T audit. You receive raw HTML of a web page. Analyse it and return ONLY a JSON object (no markdown fences, no preamble) with this structure:
-
-{
-  "url": "the URL",
-  "pageType": "Product Listing Page|Product Detail Page|Blog Post|Homepage|Service Page|Category Page|Other",
-  "industry": "detected industry",
-  "title": { "value": "title tag text", "length": number, "status": "PASS|FAIL|NEEDS WORK", "note": "..." },
-  "metaDescription": { "value": "meta desc text", "length": number, "status": "PASS|FAIL|NEEDS WORK", "note": "..." },
-  "h1": { "value": "H1 text", "status": "PASS|FAIL|NEEDS WORK", "note": "..." },
-  "canonical": { "value": "url or null", "status": "PASS|FAIL|MISSING", "note": "..." },
-  "ogUrl": { "status": "PASS|MISMATCH|MISSING", "note": "..." },
-  "schema": { "count": number, "types": [], "status": "PASS|MISSING", "note": "..." },
-  "hreflang": { "count": number, "status": "PASS|MISSING", "note": "..." },
-  "contentQualityScore": 0-100,
-  "aiCitationReadiness": 0-100,
-  "eeat": {
-    "experience": { "score": 0-25, "signals": "brief description" },
-    "expertise": { "score": 0-25, "signals": "brief description" },
-    "authoritativeness": { "score": 0-25, "signals": "brief description" },
-    "trustworthiness": { "score": 0-25, "signals": "brief description" },
-    "overall": 0-100,
-    "rating": "Strong|Moderate|Weak|Very Low"
-  },
-  "contentMetrics": {
-    "wordCount": number,
-    "editorialContent": "description",
-    "avgSentenceLength": number,
-    "headingStructure": { "h1Count": n, "h2s": ["..."], "h3s": ["..."] },
-    "internalLinks": number,
-    "externalLinks": number,
-    "images": { "total": n, "withAlt": n, "withoutAlt": n, "altQuality": "description" }
-  },
-  "geoSignals": [
-    { "signal": "name", "present": true|false, "impact": "High|Medium|Low" }
-  ],
-  "issues": [
-    { "priority": "Critical|High|Medium|Low", "issue": "description", "category": "Content|E-E-A-T|Images|Schema|Technical|i18n|GEO|Social|Freshness" }
-  ],
-  "recommendations": [
-    { "priority": "Critical|High|Medium|Low", "title": "short title", "description": "actionable detail" }
-  ],
-  "summary": "2-3 sentence executive summary"
-}
+{"url":"...","pageType":"Product Listing Page|Product Detail Page|Blog Post|Homepage|Service Page|Category Page|Other","industry":"...","title":{"value":"...","length":0,"status":"PASS|FAIL|NEEDS WORK","note":"..."},"metaDescription":{"value":"...","length":0,"status":"PASS|FAIL|NEEDS WORK","note":"..."},"h1":{"value":"...","status":"PASS|FAIL|NEEDS WORK","note":"..."},"canonical":{"value":"...","status":"PASS|FAIL|MISSING","note":"..."},"ogUrl":{"status":"PASS|MISMATCH|MISSING","note":"..."},"schema":{"count":0,"types":[],"status":"PASS|MISSING","note":"..."},"hreflang":{"count":0,"status":"PASS|MISSING","note":"..."},"contentQualityScore":0,"aiCitationReadiness":0,"eeat":{"experience":{"score":0,"signals":"..."},"expertise":{"score":0,"signals":"..."},"authoritativeness":{"score":0,"signals":"..."},"trustworthiness":{"score":0,"signals":"..."},"overall":0,"rating":"Strong|Moderate|Weak|Very Low"},"contentMetrics":{"wordCount":0,"editorialContent":"...","avgSentenceLength":0,"headingStructure":{"h1Count":0,"h2s":[],"h3s":[]},"internalLinks":0,"externalLinks":0,"images":{"total":0,"withAlt":0,"withoutAlt":0,"altQuality":"..."}},"geoSignals":[{"signal":"...","present":false,"impact":"High|Medium|Low"}],"issues":[{"priority":"Critical|High|Medium|Low","issue":"...","category":"Content|E-E-A-T|Images|Schema|Technical|i18n|GEO|Social|Freshness"}],"recommendations":[{"priority":"Critical|High|Medium|Low","title":"...","description":"..."}],"summary":"..."}
 
 RULES:
 - H1 should focus on main target ranking keyword. Do NOT recommend adding modifiers or brand qualifiers.
@@ -138,7 +54,7 @@ RULES:
 - Missing hreflang = Medium unless wrong regional page is ranking.
 - For PLP/PDP: do NOT penalise missing physical address or policy page links. Site-level signals.
 - Critical = blocks indexing or triggers penalties ONLY.
-- Return ONLY valid JSON.`;
+- Return ONLY valid JSON, nothing else.`;
 
   try {
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -150,39 +66,37 @@ RULES:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
+        max_tokens: 16000,
         system: systemPrompt,
-        messages: [{ role: 'user', content: `Analyse this page.\n\nURL: ${url}\n\nHTML:\n${pageHtml}` }],
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: `Perform a full SEO content and E-E-A-T audit on this URL: ${url}\n\nUse web search to access and examine the live page. Analyse everything you can find about the page content, meta tags, headings, images, structured data, and all on-page SEO elements. Then return ONLY the JSON audit object.`
+        }],
       }),
     });
 
     if (!claudeRes.ok) {
       const errText = await claudeRes.text();
       console.error('Anthropic API error:', claudeRes.status, errText);
-      return {
-        statusCode: 502, headers,
-        body: JSON.stringify({ error: 'Analysis service unavailable. Try again shortly.' }),
-      };
+      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Analysis service unavailable. Try again shortly.' }) };
     }
 
     const claudeData = await claudeRes.json();
-    const textBlock = claudeData.content?.find((b) => b.type === 'text');
-    const rawText = textBlock?.text || '';
+    const textBlocks = (claudeData.content || []).filter((b) => b.type === 'text');
+    const rawText = textBlocks.map((b) => b.text).join('');
 
-    // Parse JSON response
     let audit;
     try {
       const clean = rawText.replace(/^```json\s*/m, '').replace(/```\s*$/m, '').trim();
-      audit = JSON.parse(clean);
-    } catch {
-      console.error('JSON parse error. Raw:', rawText.substring(0, 500));
-      return {
-        statusCode: 200, headers,
-        body: JSON.stringify({ error: 'Analysis completed but output was malformed. Retrying may help.', partial: rawText.substring(0, 1000) }),
-      };
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found');
+      audit = JSON.parse(jsonMatch[0]);
+    } catch (parseErr) {
+      console.error('JSON parse error:', parseErr.message, 'Raw:', rawText.substring(0, 500));
+      return { statusCode: 200, headers, body: JSON.stringify({ error: 'Analysis completed but output was malformed. Retrying may help.', partial: rawText.substring(0, 1000) }) };
     }
 
-    // Add metadata
     audit._meta = {
       analysedAt: new Date().toISOString(),
       model: 'claude-sonnet-4-20250514',
@@ -194,9 +108,6 @@ RULES:
 
   } catch (e) {
     console.error('Unexpected error:', e);
-    return {
-      statusCode: 500, headers,
-      body: JSON.stringify({ error: 'Unexpected server error. Try again.' }),
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Unexpected server error. Try again.' }) };
   }
 };
