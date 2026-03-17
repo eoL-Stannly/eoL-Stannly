@@ -27,7 +27,7 @@ export const handler = async (event) => {
   }
 
   // API key is read from server-side env only — never sent to client
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.Anthropicv2;
   if (!apiKey) {
     return {
       statusCode: 500, headers,
