@@ -118,8 +118,19 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
     const filename = `seo-${tool.command}-${domain}-${date}`;
 
     if (format === 'json') {
-      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
-      dl(blob, filename + '.json');
+      dl(new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' }), filename + '.json');
+    } else if (format === 'html' || format === 'pdf') {
+      const pc = (s) => s >= 70 ? '#20C997' : s >= 50 ? '#F7CC76' : s >= 30 ? '#F08D34' : '#D34F2D';
+      const issueRows = (result.issues || []).map(i => `<tr><td style="color:${PRIORITY_COLORS[i.priority]||'#999'};font-weight:bold">${i.priority}</td><td>${i.issue}</td><td>${i.category||''}</td></tr>`).join('');
+      const recRows = (result.recommendations || []).map(r => `<tr><td style="color:${PRIORITY_COLORS[r.priority]||'#999'};font-weight:bold">${r.priority}</td><td><strong>${r.title}</strong><br>${r.description}</td></tr>`).join('');
+      const scoreHtml = Object.entries(result).filter(([k,v]) => typeof v === 'number' && k.includes('Score') || k.includes('Readiness') || k === 'overallScore').map(([k,v]) => `<div class="score-box"><div class="score-num" style="color:${pc(v)}">${v}</div><div class="score-label">${k.replace(/([A-Z])/g,' $1').trim()}</div></div>`).join('');
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${tool.label} - ${domain}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#070D18;color:#FAF9F5;font-family:'Courier New',monospace;font-size:11px;padding:40px}h1{color:#0DCAF0;font-size:20px;margin-bottom:4px}h2{color:#0047AB;font-size:14px;margin:20px 0 8px;border-bottom:1px solid #222;padding-bottom:4px}.meta{color:#999;font-size:10px;margin-bottom:16px}.scores{display:flex;gap:20px;margin:12px 0 20px;flex-wrap:wrap}.score-box{text-align:center}.score-num{font-size:24px;font-weight:bold}.score-label{font-size:8px;color:#999}table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:10px}th{background:#0047AB;color:#fff;text-align:left;padding:5px 7px;font-size:9px}td{padding:4px 7px;border-bottom:1px solid #222;vertical-align:top}tr:nth-child(even) td{background:#0C1526}.summary{background:#0C1526;border:1px solid #222;border-radius:4px;padding:10px;margin:12px 0;line-height:1.5}@media print{body{padding:15px}@page{size:A4;margin:15mm}}</style></head><body><h1>${tool.label.toUpperCase()}</h1><div class="meta">URL: ${result.url||url} · ${date} · /seo ${tool.command}</div><div class="scores">${scoreHtml}</div>${result.summary ? `<h2>// SUMMARY</h2><div class="summary">${result.summary}</div>` : ''}${issueRows ? `<h2>// ISSUES (${(result.issues||[]).length})</h2><table><tr><th>Priority</th><th>Issue</th><th>Category</th></tr>${issueRows}</table>` : ''}${recRows ? `<h2>// RECOMMENDATIONS</h2><table><tr><th>Priority</th><th>Recommendation</th></tr>${recRows}</table>` : ''}</body></html>`;
+      if (format === 'pdf') {
+        const w = window.open('', '_blank');
+        if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500); }
+      } else {
+        dl(new Blob([html], { type: 'text/html' }), filename + '.html');
+      }
     } else if (format === 'md') {
       let md = `# ${tool.label}\n\n**URL:** ${result.url || url}\n**Date:** ${date}\n**Command:** /seo ${tool.command}\n\n`;
       if (result.summary) md += `## Summary\n\n${result.summary}\n\n`;
@@ -210,7 +221,7 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
                   <button onClick={() => setShowExport(!showExport)} style={{ background:'none', border:'1px solid #7a4520', color:'#F08D34', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>⬇ EXPORT ▾</button>
                   {showExport && (
                     <div style={{ position:'absolute', right:0, top:'100%', marginTop:'4px', background:'#091E2A', border:'1px solid #144B63', borderRadius:'3px', zIndex:100, minWidth:'100px', overflow:'hidden' }}>
-                      {[{ label:'JSON', fn:() => exportAs('json') }, { label:'Markdown', fn:() => exportAs('md') }].map(opt => (
+                      {[{ label:'📄 PDF (Print)', fn:() => exportAs('pdf') }, { label:'🌐 HTML', fn:() => exportAs('html') }, { label:'📝 Markdown', fn:() => exportAs('md') }, { label:'🔧 JSON', fn:() => exportAs('json') }].map(opt => (
                         <button key={opt.label} onClick={opt.fn} style={{ display:'block', width:'100%', textAlign:'left', background:'none', border:'none', borderBottom:'1px solid #0C1526', color:'#F0F4F7', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'6px 10px' }}
                           onMouseOver={e => e.target.style.background='#162240'} onMouseOut={e => e.target.style.background='none'}>
                           {opt.label}
