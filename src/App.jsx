@@ -4,6 +4,7 @@ import ActivityFeed from './components/ActivityFeed.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import TaskConfigModal from './components/TaskConfigModal.jsx';
 import SeoToolModal from './components/SeoToolModal.jsx';
+import AyaChat from './components/AyaChat.jsx';
 import KnowledgePanel from './components/KnowledgePanel.jsx';
 import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
@@ -98,6 +99,7 @@ export default function App() {
   const [serverConnected, setServerConnected] = useState(false);
   const [configTask, setConfigTask] = useState(null);
   const [activeSeoTool, setActiveSeoTool] = useState(null);
+  const [showAya, setShowAya] = useState(false);
   const [auditHistory, setAuditHistory] = useState([]);
   const loopRef = useRef(null);
   const uptimeRef = useRef(null);
@@ -604,6 +606,17 @@ export default function App() {
           ))}
         </div>
 
+        {/* AYA - Ask Ayima Anything */}
+        <div style={{ padding: '8px 16px', borderBottom: '2px solid var(--panel-border)' }}>
+          <button
+            onClick={() => setShowAya(true)}
+            className="aya-button"
+          >
+            <span style={{ fontSize: '16px' }}>💬</span>
+            <span>AYA — Ask Ayima Anything</span>
+          </button>
+        </div>
+
         <div className="right-tabs">
           <button className={`tab-btn ${showPanel === 'reports' || showPanel === 'tasks' ? 'tab-active' : ''}`} onClick={() => setShowPanel('reports')}>
             Reports
@@ -660,6 +673,8 @@ export default function App() {
           addActivity={addActivity}
         />
       )}
+
+      {showAya && <AyaChat onClose={() => setShowAya(false)} />}
     </div>
   );
 }
