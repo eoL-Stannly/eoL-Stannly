@@ -17,12 +17,12 @@ const STATE_CONFIG = {
 const AGENT_PFPS = {
   rob: '/assets/avatars/rob.png',
   mike: '/assets/avatars/mike.png',
-  craig: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Naruto&size=200&backgroundColor=27ae60',
-  leo: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Goku&size=200&backgroundColor=8e44ad',
+  craig: '/assets/avatars/craig.png',
+  leo: '/assets/avatars/leo.png',
   ewan: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Trunks&size=200&backgroundColor=0047ab',
-  mya: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Sakura&size=200&backgroundColor=c2185b',
-  alex: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Gohan&size=200&backgroundColor=00897b',
-  ken: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Piccolo&size=200&backgroundColor=1565c0',
+  mya: '/assets/avatars/mya.png',
+  alex: '/assets/avatars/alex.png',
+  ken: '/assets/avatars/ken.png',
 };
 
 // Fallback initials if images fail to load
