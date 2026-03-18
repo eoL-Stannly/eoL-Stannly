@@ -51,12 +51,12 @@ function ScoreBar({ label, value, max = 100 }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
   const color = pct >= 70 ? '#20C997' : pct >= 50 ? '#F7CC76' : pct >= 30 ? '#F08D34' : '#D34F2D';
   return (
-    <div style={{ marginBottom: '6px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '4.5px', marginBottom: '2px' }}>
-        <span>{label}</span><span style={{ color, fontWeight: 'bold' }}>{value}/{max}</span>
+    <div style={{ marginBottom: '10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', marginBottom: '3px' }}>
+        <span style={{ color: '#ccc' }}>{label}</span><span style={{ color, fontWeight: 'bold' }}>{value}/{max}</span>
       </div>
-      <div style={{ height: '4px', background: '#162240', borderRadius: '2px', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '2px' }} />
+      <div style={{ height: '6px', background: '#162240', borderRadius: '3px', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '3px' }} />
       </div>
     </div>
   );
@@ -292,14 +292,14 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
 
               {/* Issues */}
               {result.issues?.length > 0 && (<>
-                <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// ISSUES ({result.issues.length})</div>
+                <div style={{ color:'#0047AB', fontSize:'14px', fontWeight:'bold', margin:'16px 0 8px' }}>// ISSUES ({result.issues.length})</div>
                 {result.issues.map((raw, i) => {
                   const issue = normaliseIssue(raw);
                   return (
-                  <div key={i} style={{ display:'flex', gap:'8px', padding:'6px 0', borderBottom:'1px solid #162240' }}>
-                    <span style={{ color: PRIORITY_COLORS[issue.priority] || '#999', fontWeight:'bold', minWidth:'45px', fontSize:'13px' }}>{issue.priority}</span>
-                    <span style={{ color:'#ccc', flex:1, fontSize:'13px' }}>{issue.issue}</span>
-                    <span style={{ color:'#666', fontSize:'16px' }}>{issue.category}</span>
+                  <div key={i} style={{ display:'flex', gap:'8px', padding:'5px 0', borderBottom:'1px solid #162240', alignItems:'baseline' }}>
+                    <span style={{ color: PRIORITY_COLORS[issue.priority] || '#999', fontWeight:'bold', minWidth:'50px', fontSize:'10px' }}>{issue.priority}</span>
+                    <span style={{ color:'#ccc', flex:1, fontSize:'10px', lineHeight:'1.5' }}>{issue.issue}</span>
+                    <span style={{ color:'#555', fontSize:'9px', whiteSpace:'nowrap' }}>{issue.category}</span>
                   </div>
                   );
                 })}
@@ -307,13 +307,13 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
 
               {/* Recommendations */}
               {result.recommendations?.length > 0 && (<>
-                <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// RECOMMENDATIONS</div>
+                <div style={{ color:'#0047AB', fontSize:'14px', fontWeight:'bold', margin:'16px 0 8px' }}>// RECOMMENDATIONS</div>
                 {result.recommendations.map((raw, i) => {
                   const rec = normaliseRec(raw);
                   return (
-                  <div key={i} style={{ padding:'8px 12px', marginBottom:'4px', background:'#0C1526', borderLeft:`2px solid ${PRIORITY_COLORS[rec.priority]||'#444'}`, borderRadius:'2px' }}>
-                    <div style={{ fontSize:'13px' }}><span style={{ color:PRIORITY_COLORS[rec.priority], fontWeight:'bold' }}>{rec.priority}</span> <span style={{ color:'#F0F4F7', fontWeight:'bold' }}>{rec.title}</span></div>
-                    {rec.description && <div style={{ color:'#999', fontSize:'13px', marginTop:'2px' }}>{rec.description}</div>}
+                  <div key={i} style={{ padding:'8px 12px', marginBottom:'5px', background:'#0C1526', borderLeft:`2px solid ${PRIORITY_COLORS[rec.priority]||'#444'}`, borderRadius:'3px' }}>
+                    <div style={{ fontSize:'10px' }}><span style={{ color:PRIORITY_COLORS[rec.priority], fontWeight:'bold' }}>{rec.priority}</span> <span style={{ color:'#F0F4F7', fontWeight:'bold' }}>{rec.title}</span></div>
+                    {rec.description && <div style={{ color:'#999', fontSize:'9px', marginTop:'3px', lineHeight:'1.6' }}>{rec.description}</div>}
                   </div>
                   );
                 })}
