@@ -3,7 +3,6 @@ import OfficeWorkspace from './components/OfficeWorkspace.jsx';
 import ActivityFeed from './components/ActivityFeed.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import TaskConfigModal from './components/TaskConfigModal.jsx';
-import PageContentAuditModal from './components/PageContentAuditModal.jsx';
 import SeoToolModal from './components/SeoToolModal.jsx';
 import KnowledgePanel from './components/KnowledgePanel.jsx';
 import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
@@ -98,7 +97,6 @@ export default function App() {
   const [showPanel, setShowPanel] = useState('tasks');
   const [serverConnected, setServerConnected] = useState(false);
   const [configTask, setConfigTask] = useState(null);
-  const [showPageAudit, setShowPageAudit] = useState(false);
   const [activeSeoTool, setActiveSeoTool] = useState(null);
   const [auditHistory, setAuditHistory] = useState([]);
   const loopRef = useRef(null);
@@ -655,29 +653,6 @@ export default function App() {
             setConfigTask(null);
             submitTask(description, meta);
           }}
-        />
-      )}
-
-      {showPageAudit && (
-        <PageContentAuditModal
-          onClose={() => setShowPageAudit(false)}
-          preloadAudit={window._preloadAudit || null}
-          onClearPreload={() => { window._preloadAudit = null; }}
-          onAuditComplete={(audit) => {
-            setAuditHistory(prev => [{ ...audit, _savedAt: new Date().toISOString() }, ...prev]);
-          }}
-          onAgentState={(agentId, state) => {
-            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state, atWaterCooler: false, chattingWith: null, speechBubble: null } : a));
-          }}
-          onAgentSpeech={(agentId, text) => {
-            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, speechBubble: text } : a));
-            if (text) setTimeout(() => setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, speechBubble: null } : a)), 4000);
-          }}
-          onAgentComplete={(agentId) => {
-            setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state: AGENT_STATES.CELEBRATING, completedTasks: a.completedTasks + 1 } : a));
-            setTimeout(() => setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, state: AGENT_STATES.IDLE } : a)), 3000);
-          }}
-          addActivity={addActivity}
         />
       )}
 
