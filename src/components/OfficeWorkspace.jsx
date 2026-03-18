@@ -17,7 +17,7 @@ const AGENT_PFPS = {
   mike: '/assets/avatars/mike.png',
   craig: '/assets/avatars/craig.png',
   leo: '/assets/avatars/leo.png',
-  ewan: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Trunks&size=200&backgroundColor=0047ab',
+  ewan: '/assets/avatars/ewan.png',
   mya: '/assets/avatars/mya.png',
   alex: '/assets/avatars/alex.png',
   ken: '/assets/avatars/ken.png',
@@ -192,10 +192,18 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
         gap: '18px',
         alignContent: 'start',
       }}>
-        {agents.map(agent => (
+        {(() => {
+          const order = ['mike', 'rob', 'ewan', 'leo', 'craig', 'alex', 'ken', 'mya'];
+          const sorted = [...agents].sort((a, b) => {
+            const ai = order.indexOf(a.id);
+            const bi = order.indexOf(b.id);
+            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+          });
+          return sorted.map(agent => (
           <AgentCard key={agent.id} agent={agent} isSelected={selectedAgent === agent.id}
             onClick={() => onSelectAgent(agent.id === selectedAgent ? null : agent.id)} />
-        ))}
+          ));
+        })()}
       </div>
 
       <style>{`
