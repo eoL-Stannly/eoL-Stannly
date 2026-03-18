@@ -6,21 +6,45 @@ const PRIORITY_COLORS = { Critical: '#D34F2D', High: '#F08D34', Medium: '#F7CC76
 function normaliseIssue(item) {
   if (typeof item === 'string') return { priority: 'Medium', issue: item, category: '' };
   return {
-    priority: item.priority || item.severity || 'Medium',
-    issue: item.issue || item.description || item.finding || item.problem || item.text || item.message || JSON.stringify(item),
-    category: item.category || item.type || item.area || '',
+    priority: item.priority || item.severity || item.impact || 'Medium',
+    issue: item.issue || item.description || item.finding || item.problem || item.text || item.message || item.detail || item.gap || item.opportunity || Object.values(item).find(v => typeof v === 'string' && v.length > 10) || JSON.stringify(item),
+    category: item.category || item.type || item.area || item.signal || '',
   };
 }
 
 function normaliseRec(item) {
   if (typeof item === 'string') return { priority: 'Medium', title: item, description: '' };
-  const title = item.title || item.name || item.recommendation || item.action || item.type || item.label || 'Recommendation';
-  const desc = item.description || item.details || item.explanation || item.rationale || item.text || item.note || '';
-  // If title === desc (Claude sometimes puts everything in one field), split them
-  if (title === desc && title.length > 60) {
-    return { priority: item.priority || 'Medium', title: title.substring(0, 60) + '...', description: title };
+  // Try every possible field name Claude might use for the title
+  const title = item.title || item.name || item.recommendation || item.action || item.item || item.topic || item.opportunity || item.gap || item.type || item.label || item.phase ||
+    Object.values(item).find(v => typeof v === 'string' && v.length > 3 && v.length < 120) || 'Recommendation';
+  // Try every possible field name for description
+  const desc = item.description || item.details || item.explanation || item.rationale || item.text || item.note || item.reason || item.content || item.json ||
+    (Array.isArray(item.actions) ? item.actions.join(', ') : '') ||
+    (Array.isArray(item.strengths) ? 'Strengths: ' + item.strengths.join(', ') : '') ||
+    (Array.isArray(item.weaknesses) ? 'Weaknesses: ' + item.weaknesses.join(', ') : '') ||
+    (Array.isArray(item.findings) ? item.findings.join(', ') : '') || '';
+  if (title === desc && title.length > 80) {
+    return { priority: item.priority || 'Medium', title: title.substring(0, 80) + '...', description: title };
   }
-  return { priority: item.priority || item.severity || 'Medium', title, description: desc };
+  return {
+    priority: item.priority || item.severity || item.impact || 'Medium',
+    title: typeof title === 'string' ? title : JSON.stringify(title),
+    description: typeof desc === 'string' ? desc : JSON.stringify(desc),
+  };
+}
+
+// Normalise any list of objects into displayable items
+function normaliseListItem(item) {
+  if (typeof item === 'string') return { label: item, detail: '' };
+  if (Array.isArray(item)) return { label: item.join(', '), detail: '' };
+  // Try to extract a meaningful label and detail
+  const entries = Object.entries(item).filter(([k]) => !k.startsWith('_'));
+  const strEntries = entries.filter(([, v]) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean');
+  const label = strEntries.length > 0 ? String(strEntries[0][1]) : '';
+  const detail = strEntries.slice(1).map(([k, v]) => `${k}: ${v}`).join(' · ');
+  const arrays = entries.filter(([, v]) => Array.isArray(v));
+  const arrayDetail = arrays.map(([k, v]) => `${k}: ${v.join(', ')}`).join(' | ');
+  return { label: label || JSON.stringify(item).substring(0, 80), detail: [detail, arrayDetail].filter(Boolean).join(' | ') };
 }
 
 function ScoreBar({ label, value, max = 100 }) {
@@ -294,6 +318,47 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
                   );
                 })}
               </>)}
+
+              {/* Auto-render any additional data arrays from the result */}
+              {Object.entries(result).filter(([key, val]) => {
+                if (key.startsWith('_') || key === 'url' || key === 'pageType' || key === 'industry' || key === 'summary' || key === 'issues' || key === 'recommendations') return false;
+                if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'string') return false;
+                if (key.toLowerCase().includes('score')) return false;
+                return Array.isArray(val) && val.length > 0;
+              }).map(([key, val]) => (
+                <div key={key}>
+                  <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
+                  {val.map((item, i) => {
+                    const n = normaliseListItem(item);
+                    return (
+                      <div key={i} style={{ padding:'4px 8px', marginBottom:'3px', background: i % 2 === 0 ? '#0C1526' : 'transparent', borderRadius:'2px', fontSize:'4.5px' }}>
+                        <span style={{ color:'#2EC4F3', fontWeight:'bold' }}>{n.label}</span>
+                        {n.detail && <span style={{ color:'#999', marginLeft:'8px' }}>{n.detail}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Auto-render nested objects (e.g. eeat, contentMetrics, keywordStrategy) */}
+              {Object.entries(result).filter(([key, val]) => {
+                if (key.startsWith('_') || key === 'url' || key === 'pageType' || key === 'industry' || key === 'summary' || key === 'issues' || key === 'recommendations') return false;
+                return val && typeof val === 'object' && !Array.isArray(val);
+              }).map(([key, val]) => {
+                const entries = Object.entries(val).filter(([, v]) => v !== null && v !== undefined);
+                if (entries.length === 0) return null;
+                return (
+                  <div key={key}>
+                    <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
+                    {entries.map(([k, v]) => (
+                      <div key={k} style={{ display:'flex', gap:'6px', padding:'3px 0', borderBottom:'1px solid #162240', fontSize:'4.5px' }}>
+                        <span style={{ color:'#2EC4F3', minWidth:'80px' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                        <span style={{ color:'#ccc', flex:1 }}>{typeof v === 'object' ? (Array.isArray(v) ? v.join(', ') : JSON.stringify(v)) : String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
 
               {/* Summary */}
               {result.summary && (<>
