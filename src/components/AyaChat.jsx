@@ -26,18 +26,43 @@ export default function AyaChat({ onClose }) {
     const recent = messages.slice(-6);
     const context = recent.map(m => `${m.role === 'user' ? 'Q' : 'A'}: ${m.text}`).join('\n');
 
-    try {
-      const res = await fetch('/api/aya', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q, context }),
-      });
-      const data = await res.json();
+    const retryDelays = [0, 10000, 20000, 30000];
+    let succeeded = false;
 
-      if (data.error) {
-        setMessages(prev => [...prev, { role: 'aya', text: `Error: ${data.error}`, time: new Date(), error: true }]);
-      } else {
-        setMessages(prev => [...prev, { role: 'aya', text: data.answer, time: new Date(), meta: data._meta }]);
+    try {
+      for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+        if (attempt > 0) {
+          // Show countdown in a temporary message
+          const waitSec = retryDelays[attempt] / 1000;
+          const retryMsgId = Date.now();
+          setMessages(prev => [...prev, { role: 'aya', text: `Rate limited — auto-retrying in ${waitSec}s (attempt ${attempt + 1}/3)...`, time: new Date(), id: retryMsgId, retrying: true }]);
+          for (let sec = waitSec; sec > 0; sec--) {
+            setMessages(prev => prev.map(m => m.id === retryMsgId ? { ...m, text: `Rate limited — auto-retrying in ${sec}s (attempt ${attempt + 1}/3)...` } : m));
+            await new Promise(r => setTimeout(r, 1000));
+          }
+          // Remove the countdown message before retrying
+          setMessages(prev => prev.filter(m => m.id !== retryMsgId));
+        }
+
+        const res = await fetch('/api/aya', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q, context }),
+        });
+        const data = await res.json();
+
+        if (data.error && (data.error.toLowerCase().includes('rate limit') || data.error.includes('429') || data.error.includes('busy'))) {
+          if (attempt < retryDelays.length - 1) continue;
+          setMessages(prev => [...prev, { role: 'aya', text: 'Rate limited after 3 retries. Please wait a minute and try again.', time: new Date(), error: true }]);
+          succeeded = true; break;
+        }
+
+        if (data.error) {
+          setMessages(prev => [...prev, { role: 'aya', text: `Error: ${data.error}`, time: new Date(), error: true }]);
+        } else {
+          setMessages(prev => [...prev, { role: 'aya', text: data.answer, time: new Date(), meta: data._meta }]);
+        }
+        succeeded = true; break;
       }
     } catch {
       setMessages(prev => [...prev, { role: 'aya', text: 'Network error. Check your connection.', time: new Date(), error: true }]);

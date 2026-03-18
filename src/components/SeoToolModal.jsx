@@ -124,28 +124,61 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
     const allTimers = [...progressTimers, ...agentTimers];
 
     try {
-      const res = await fetch('/api/seo-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: tool.command, url: testUrl }),
-      });
-      const data = await res.json();
-      allTimers.forEach(clearTimeout);
+      const retryDelays = [0, 10000, 20000, 30000]; // immediate, then 10s, 20s, 30s
+      let lastError = '';
 
-      if (data.error) {
-        setError(data.error); setLoading(false);
-        if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
+      for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+        if (attempt > 0) {
+          // Show countdown before retrying
+          const waitSec = retryDelays[attempt] / 1000;
+          for (let sec = waitSec; sec > 0; sec--) {
+            setProgress(`Rate limited — auto-retrying in ${sec}s (attempt ${attempt + 1}/3)...`);
+            if (onAgentSpeech) onAgentSpeech(agent, `Rate limited, retrying in ${sec}s...`);
+            await new Promise(r => setTimeout(r, 1000));
+          }
+          setProgress(`Retrying (attempt ${attempt + 1}/3)...`);
+        }
+
+        const res = await fetch('/api/seo-tool', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: tool.command, url: testUrl }),
+        });
+        const data = await res.json();
+
+        // Check if rate limited
+        if (data.error && (data.error.toLowerCase().includes('rate limit') || data.error.includes('429') || data.error.includes('busy'))) {
+          lastError = data.error;
+          if (attempt < retryDelays.length - 1) continue; // retry
+          // Final attempt failed
+          allTimers.forEach(clearTimeout);
+          setError('Rate limited after 3 retries. Please wait a minute and try again.');
+          setLoading(false);
+          if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
+          return;
+        }
+
+        // Non-rate-limit error
+        if (data.error) {
+          allTimers.forEach(clearTimeout);
+          setError(data.error); setLoading(false);
+          if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
+          return;
+        }
+
+        // Success
+        allTimers.forEach(clearTimeout);
+        setResult(data);
+        if (onComplete) onComplete(data);
+        if (onAgentComplete) onAgentComplete(agent);
+        if (onAgentSpeech) onAgentSpeech(agent, `${tool.label} done! ✓`);
+        if (addActivity) addActivity(agent, agentName, `Completed: ${tool.label} for ${testUrl}`, 'task_completed');
+        setLoading(false); setProgress('');
         return;
       }
-
-      setResult(data);
-      if (onComplete) onComplete(data);
-      if (onAgentComplete) onAgentComplete(agent);
-      if (onAgentSpeech) onAgentSpeech(agent, `${tool.label} done! ✓`);
-      if (addActivity) addActivity(agent, agentName, `Completed: ${tool.label} for ${testUrl}`, 'task_completed');
-    } catch {
+    } catch (e) {
       allTimers.forEach(clearTimeout);
-      setError('Network error.');
+      setError('Network error: ' + (e.message || 'Check your connection.'));
       if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
     }
     setLoading(false); setProgress('');
