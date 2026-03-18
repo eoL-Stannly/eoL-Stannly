@@ -12,8 +12,6 @@ const STATE_CONFIG = {
   [AGENT_STATES.CELEBRATING]: { label: 'Done!', color: '#F7CC76', bg: 'rgba(247,204,118,0.08)' },
 };
 
-// PFPs - local files for custom uploads, DiceBear fallback for others
-// Upload custom PFPs to /assets/avatars/{id}.png to override
 const AGENT_PFPS = {
   rob: '/assets/avatars/rob.png',
   mike: '/assets/avatars/mike.png',
@@ -25,13 +23,12 @@ const AGENT_PFPS = {
   ken: '/assets/avatars/ken.png',
 };
 
-// Fallback initials if images fail to load
 const AGENT_COLORS = {
   rob: '#C0392B', mike: '#2C3E50', craig: '#27AE60', leo: '#8E44AD',
   ewan: '#0047AB', mya: '#C2185B', alex: '#00897B', ken: '#1565C0',
 };
 
-function AvatarImg({ agentId, name, size, borderColor }) {
+function AvatarImg({ agentId, name, size, borderColor, isActive }) {
   const [failed, setFailed] = React.useState(false);
   const bg = AGENT_COLORS[agentId] || '#333';
 
@@ -39,12 +36,12 @@ function AvatarImg({ agentId, name, size, borderColor }) {
     return (
       <div style={{
         width: size, height: size, borderRadius: '50%', flexShrink: 0,
-        border: `3px solid ${borderColor}`,
+        border: `4px solid ${borderColor}`,
         background: bg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'border-color 0.3s, box-shadow 0.3s',
+        boxShadow: isActive ? `0 0 20px ${borderColor}40` : 'none',
       }}>
-        <span style={{ color: '#fff', fontFamily: '"Press Start 2P", monospace', fontSize: size * 0.3 }}>{name.charAt(0)}</span>
+        <span style={{ color: '#fff', fontFamily: '"Press Start 2P", monospace', fontSize: size * 0.25 }}>{name.charAt(0)}</span>
       </div>
     );
   }
@@ -52,9 +49,10 @@ function AvatarImg({ agentId, name, size, borderColor }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-      border: `3px solid ${borderColor}`,
+      border: `4px solid ${borderColor}`,
       transition: 'border-color 0.3s, box-shadow 0.3s',
       background: bg,
+      boxShadow: isActive ? `0 0 24px ${borderColor}40` : 'none',
     }}>
       <img
         src={AGENT_PFPS[agentId]}
@@ -62,7 +60,6 @@ function AvatarImg({ agentId, name, size, borderColor }) {
         onError={() => setFailed(true)}
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         referrerPolicy="no-referrer"
-        crossOrigin="anonymous"
       />
     </div>
   );
@@ -77,50 +74,49 @@ function AgentCard({ agent, isSelected, onClick }) {
   return (
     <div onClick={onClick} style={{
       background: isActive ? cfg.bg : '#0C1526',
-      border: `1.5px solid ${isSelected ? '#2EC4F3' : isActive ? `${cfg.color}44` : '#1A2A3A'}`,
-      borderRadius: '12px',
-      padding: '20px',
+      border: `2px solid ${isSelected ? '#2EC4F3' : isActive ? `${cfg.color}44` : '#1A2A3A'}`,
+      borderRadius: '16px',
+      padding: '28px',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
       position: 'relative',
       overflow: 'hidden',
-      height: '240px',
+      height: '380px',
       display: 'flex',
       flexDirection: 'column',
     }}>
-      {/* Active glow */}
       {isWorking && <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
         background: `radial-gradient(ellipse at 20% 30%, ${cfg.color}12 0%, transparent 70%)`,
         animation: 'cardGlow 3s ease-in-out infinite', pointerEvents: 'none',
       }} />}
 
-      {/* Top: Avatar + Info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '18px', position: 'relative', zIndex: 1 }}>
+      {/* Avatar + Info */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
         <AvatarImg
           agentId={agent.id}
           name={agent.name}
-          size={90}
+          size={140}
           borderColor={isActive ? cfg.color : '#1A2A3A'}
+          isActive={isActive}
         />
-
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-            <span style={{ color: '#FAF9F5', fontFamily: '"Press Start 2P", monospace', fontSize: '14px' }}>{agent.name}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <span style={{ color: '#FAF9F5', fontFamily: '"Press Start 2P", monospace', fontSize: '20px' }}>{agent.name}</span>
             <span style={{
-              width: 10, height: 10, borderRadius: '50%', background: cfg.color, flexShrink: 0,
+              width: 14, height: 14, borderRadius: '50%', background: cfg.color, flexShrink: 0,
               animation: isActive ? 'dotPulse 1.5s ease-in-out infinite' : 'none',
-              boxShadow: isActive ? `0 0 8px ${cfg.color}` : 'none',
+              boxShadow: isActive ? `0 0 10px ${cfg.color}` : 'none',
             }} />
-            {isCelebrating && <span style={{ fontSize: '18px', animation: 'celebBounce 0.5s ease-in-out infinite alternate' }}>&#10024;</span>}
+            {isCelebrating && <span style={{ fontSize: '24px', animation: 'celebBounce 0.5s ease-in-out infinite alternate' }}>&#10024;</span>}
           </div>
-          <div style={{ color: '#888', fontFamily: '"Press Start 2P", monospace', fontSize: '9px', lineHeight: '1.5' }}>{agent.title}</div>
+          <div style={{ color: '#888', fontFamily: '"Press Start 2P", monospace', fontSize: '12px', lineHeight: '1.5' }}>{agent.title}</div>
           {agent.completedTasks > 0 && (
             <div style={{
-              marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px',
-              background: 'rgba(247,204,118,0.15)', padding: '3px 10px', borderRadius: '4px',
+              marginTop: '12px', display: 'inline-flex', alignItems: 'center',
+              background: 'rgba(247,204,118,0.15)', padding: '5px 12px', borderRadius: '6px',
             }}>
-              <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '8px', color: '#F7CC76' }}>
+              <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '11px', color: '#F7CC76' }}>
                 {agent.completedTasks} task{agent.completedTasks !== 1 ? 's' : ''}
               </span>
             </div>
@@ -129,30 +125,30 @@ function AgentCard({ agent, isSelected, onClick }) {
       </div>
 
       {/* Status bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '16px', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '24px', position: 'relative', zIndex: 1 }}>
         <span style={{
-          fontFamily: '"Press Start 2P", monospace', fontSize: '9px',
+          fontFamily: '"Press Start 2P", monospace', fontSize: '13px',
           color: cfg.color, textTransform: 'uppercase', letterSpacing: '1px',
-          minWidth: '80px',
+          minWidth: '100px',
         }}>{cfg.label}</span>
-        <div style={{ flex: 1, height: 5, background: '#162240', borderRadius: '3px', overflow: 'hidden' }}>
+        <div style={{ flex: 1, height: 8, background: '#162240', borderRadius: '4px', overflow: 'hidden' }}>
           {isWorking ? (
-            <div style={{ height: '100%', background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)`, borderRadius: '3px', animation: 'progressSlide 2.5s ease-in-out infinite' }} />
+            <div style={{ height: '100%', background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)`, borderRadius: '4px', animation: 'progressSlide 2.5s ease-in-out infinite' }} />
           ) : null}
         </div>
       </div>
 
-      {/* Speech area - fixed height, always present */}
-      <div style={{ marginTop: 'auto', height: '48px', position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start' }}>
+      {/* Speech area - fixed at bottom */}
+      <div style={{ marginTop: 'auto', height: '60px', position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start' }}>
         {agent.speechBubble && (
           <div style={{
-            width: '100%', padding: '8px 12px', background: '#0A1628', borderRadius: '6px',
+            width: '100%', padding: '12px 16px', background: '#0A1628', borderRadius: '8px',
             border: `1px solid ${cfg.color}22`,
-            fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
+            fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
             color: '#ccc', lineHeight: '1.6',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            <span style={{ color: cfg.color, marginRight: '6px' }}>{'>'}</span>
+            <span style={{ color: cfg.color, marginRight: '8px' }}>{'>'}</span>
             {agent.speechBubble}
           </div>
         )}
@@ -167,35 +163,33 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
 
   return (
     <div className="game-office" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#070D18' }}>
-      {/* Header */}
       <div style={{
-        padding: '18px 24px', borderBottom: '1px solid #144B63',
+        padding: '20px 28px', borderBottom: '2px solid #144B63',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: '#0A1120', flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src="/assets/ayima-logo.png" alt="Ayima" style={{ height: 30 }} />
-          <span style={{ color: '#333', fontSize: '16px', fontWeight: 300 }}>|</span>
-          <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '13px', color: '#2EC4F3', letterSpacing: '2px' }}>AGI HQ</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <img src="/assets/ayima-logo.png" alt="Ayima" style={{ height: 36 }} />
+          <span style={{ color: '#333', fontSize: '20px', fontWeight: 300 }}>|</span>
+          <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '16px', color: '#2EC4F3', letterSpacing: '3px' }}>AGI HQ</span>
         </div>
-        <div style={{ display: 'flex', gap: '16px', fontFamily: '"Press Start 2P", monospace', fontSize: '9px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '20px', fontFamily: '"Press Start 2P", monospace', fontSize: '12px', alignItems: 'center' }}>
           <span style={{ color: activeCount > 0 ? '#20C997' : '#555' }}>
             {activeCount > 0 ? `${activeCount} ACTIVE` : 'ALL IDLE'}
           </span>
           {totalTasks > 0 && (
-            <span style={{ color: '#F7CC76', background: 'rgba(247,204,118,0.1)', padding: '4px 10px', borderRadius: '4px' }}>
+            <span style={{ color: '#F7CC76', background: 'rgba(247,204,118,0.1)', padding: '6px 14px', borderRadius: '6px' }}>
               {totalTasks} COMPLETED
             </span>
           )}
         </div>
       </div>
 
-      {/* Agent Grid - large cards fill the screen */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '20px',
+        flex: 1, overflowY: 'auto', padding: '24px',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-        gap: '14px',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))',
+        gap: '18px',
         alignContent: 'start',
       }}>
         {agents.map(agent => (
