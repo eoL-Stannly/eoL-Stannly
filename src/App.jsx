@@ -703,39 +703,62 @@ function AgentDetail({ agent, onClose }) {
 
 function AuditReportsPanel({ history, onViewReport }) {
   const sc = (s) => s >= 70 ? '#20C997' : s >= 50 ? '#F7CC76' : s >= 30 ? '#F08D34' : '#D34F2D';
+  const pf = '"Press Start 2P", monospace';
   return (
     <div className="task-panel">
-      <h3 className="panel-title"><span className="panel-icon">📊</span>Audit Reports</h3>
+      <h3 className="panel-title"><span className="panel-icon">&#128203;</span>Session History</h3>
       <div className="task-list">
         {history.length === 0 ? (
-          <div className="task-empty">No audits completed yet. Run a Page Content Audit to see reports here.</div>
+          <div className="task-empty" style={{ fontFamily: pf, fontSize: '8px', color: '#666', padding: '20px 14px', lineHeight: '2' }}>
+            No tasks completed yet.<br/>Click a command above to get started.
+          </div>
         ) : (
           history.map((audit, i) => {
-            const domain = (() => { try { return new URL(audit.url).hostname.replace('www.', ''); } catch { return 'unknown'; } })();
+            const domain = (() => { try { return new URL(audit.url).hostname.replace('www.', ''); } catch { return '—'; } })();
             const time = new Date(audit._savedAt || audit._meta?.analysedAt);
-            const timeStr = time.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
-            const dateStr = time.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+            const timeStr = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const cmdLabel = audit._meta?.label || 'Analysis';
+            const cmd = audit._meta?.command || '';
+
+            // Find a primary score to show
+            const scores = [];
+            if (audit.overallScore != null) scores.push({ k: 'Overall', v: audit.overallScore });
+            if (audit.contentQualityScore != null) scores.push({ k: 'Content', v: audit.contentQualityScore });
+            if (audit.technicalScore != null) scores.push({ k: 'Technical', v: audit.technicalScore });
+            if (audit.schemaScore != null) scores.push({ k: 'Schema', v: audit.schemaScore });
+            if (audit.imageScore != null) scores.push({ k: 'Images', v: audit.imageScore });
+            if (audit.geoScore != null) scores.push({ k: 'GEO', v: audit.geoScore });
+            if (audit.hreflangScore != null) scores.push({ k: 'Hreflang', v: audit.hreflangScore });
+            if (audit.sitemapScore != null) scores.push({ k: 'Sitemap', v: audit.sitemapScore });
+            if (audit.eeat?.overall != null) scores.push({ k: 'E-E-A-T', v: audit.eeat.overall });
+            if (audit.aiCitationReadiness != null) scores.push({ k: 'AI', v: audit.aiCitationReadiness });
+            const issueCount = (audit.issues || []).length;
+
             return (
               <div key={`${audit.url}-${i}`} style={{
-                padding: '8px 10px', borderBottom: '1px solid #0C1526', cursor: 'pointer',
+                padding: '12px 14px', borderBottom: '1px solid #0C1526', cursor: 'pointer',
                 transition: 'background 0.15s',
               }}
               onMouseOver={e => e.currentTarget.style.background = '#162240'}
               onMouseOut={e => e.currentTarget.style.background = 'transparent'}
               onClick={() => onViewReport(audit)}
               >
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'3px' }}>
-                  <span style={{ fontFamily:'var(--pixel-font)', fontSize:'5px', color:'#2EC4F3' }}>{domain}</span>
-                  <span style={{ fontFamily:'var(--pixel-font)', fontSize:'4px', color:'#666' }}>{dateStr} {timeStr}</span>
+                {/* Row 1: Command label + timestamp */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <span style={{ fontFamily: pf, fontSize: '9px', color: '#2EC4F3' }}>{cmdLabel}</span>
+                  <span style={{ fontFamily: pf, fontSize: '7px', color: '#555' }}>{dateStr} {timeStr}</span>
                 </div>
-                <div style={{ fontFamily:'var(--pixel-font)', fontSize:'4px', color:'#999', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                  {audit.url}
+                {/* Row 2: URL */}
+                <div style={{ fontFamily: pf, fontSize: '7px', color: '#999', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {domain} — {audit.url}
                 </div>
-                <div style={{ display:'flex', gap:'8px', fontFamily:'var(--pixel-font)', fontSize:'4px' }}>
-                  <span>Content: <span style={{ color: sc(audit.contentQualityScore || 0), fontWeight:'bold' }}>{audit.contentQualityScore || 0}</span></span>
-                  <span>E-E-A-T: <span style={{ color: sc(audit.eeat?.overall || 0), fontWeight:'bold' }}>{audit.eeat?.overall || 0}</span></span>
-                  <span>AI: <span style={{ color: sc(audit.aiCitationReadiness || 0), fontWeight:'bold' }}>{audit.aiCitationReadiness || 0}</span></span>
-                  <span style={{ color:'#666' }}>{(audit.issues || []).length} issues</span>
+                {/* Row 3: Scores + issues */}
+                <div style={{ display: 'flex', gap: '10px', fontFamily: pf, fontSize: '7px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {scores.slice(0, 4).map(s => (
+                    <span key={s.k}>{s.k}: <span style={{ color: sc(s.v), fontWeight: 'bold' }}>{s.v}</span></span>
+                  ))}
+                  {issueCount > 0 && <span style={{ color: '#666' }}>{issueCount} issues</span>}
                 </div>
               </div>
             );
@@ -745,3 +768,4 @@ function AuditReportsPanel({ history, onViewReport }) {
     </div>
   );
 }
+
