@@ -382,42 +382,91 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
               }).map(([key, val]) => {
                 const entries = Object.entries(val).filter(([, v]) => v !== null && v !== undefined);
                 if (entries.length === 0) return null;
+
+                // Check if this is an E-E-A-T style object (sub-objects with score fields)
+                const hasScoreChildren = entries.some(([, v]) => v && typeof v === 'object' && !Array.isArray(v) && typeof v.score === 'number');
+
                 return (
                   <div key={key}>
                     <div style={{ color:'#0047AB', fontSize:'14px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
-                    {entries.map(([k, v]) => {
-                      // Handle nested sub-objects (e.g. eeat.experience = {score, signals})
-                      if (v && typeof v === 'object' && !Array.isArray(v)) {
-                        const subEntries = Object.entries(v);
-                        return (
-                          <div key={k} style={{ padding:'6px 10px', marginBottom:'4px', background:'#0C1526', borderRadius:'3px' }}>
-                            <div style={{ color:'#2EC4F3', fontSize:'10px', fontWeight:'bold', marginBottom:'4px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</div>
-                            {subEntries.map(([sk, sv]) => (
-                              <div key={sk} style={{ display:'flex', gap:'8px', padding:'2px 0', fontSize:'9px' }}>
-                                <span style={{ color:'#666', minWidth:'70px', textTransform:'capitalize' }}>{sk.replace(/([A-Z])/g, ' $1')}</span>
-                                <span style={{ color:'#ccc', flex:1, lineHeight:'1.5' }}>{Array.isArray(sv) ? sv.join(', ') : String(sv)}</span>
+
+                    {hasScoreChildren ? (
+                      // Render as score cards (E-E-A-T style)
+                      entries.map(([k, v]) => {
+                        if (v && typeof v === 'object' && !Array.isArray(v) && typeof v.score === 'number') {
+                          const maxScore = key === 'eeat' ? 25 : 100;
+                          const pct = (v.score / maxScore) * 100;
+                          const barColor = pct >= 70 ? '#20C997' : pct >= 50 ? '#F7CC76' : pct >= 30 ? '#F08D34' : '#D34F2D';
+                          const signals = v.signals || v.description || v.details || '';
+                          const signalText = Array.isArray(signals) ? signals.join(' · ') : String(signals);
+                          return (
+                            <div key={k} style={{ padding:'8px 12px', marginBottom:'6px', background:'#0C1526', borderRadius:'4px', borderLeft:`3px solid ${barColor}` }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
+                                <span style={{ color:'#F0F4F7', fontSize:'10px', fontWeight:'bold', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                                <span style={{ color: barColor, fontSize:'10px', fontWeight:'bold' }}>{v.score}/{maxScore}</span>
                               </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      // Handle arrays as comma-separated values
-                      if (Array.isArray(v)) {
+                              <div style={{ height:'5px', background:'#162240', borderRadius:'3px', overflow:'hidden', marginBottom:'5px' }}>
+                                <div style={{ height:'100%', width:`${pct}%`, background: barColor, borderRadius:'3px' }} />
+                              </div>
+                              {signalText && <div style={{ color:'#888', fontSize:'9px', lineHeight:'1.6' }}>{signalText}</div>}
+                            </div>
+                          );
+                        }
+                        // Non-score entries in the same object (like overall, rating)
+                        if (typeof v === 'number') {
+                          const pct = v > 25 ? v : v * 4; // normalize if out of 25
+                          const barColor = pct >= 70 ? '#20C997' : pct >= 50 ? '#F7CC76' : pct >= 30 ? '#F08D34' : '#D34F2D';
+                          return (
+                            <div key={k} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'4px 12px', fontSize:'10px' }}>
+                              <span style={{ color:'#2EC4F3', minWidth:'80px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                              <span style={{ color: barColor, fontWeight:'bold' }}>{v}{v <= 100 ? '/100' : ''}</span>
+                            </div>
+                          );
+                        }
                         return (
-                          <div key={k} style={{ display:'flex', gap:'8px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
-                            <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                            <span style={{ color:'#ccc', flex:1, lineHeight:'1.5' }}>{v.join(', ')}</span>
+                          <div key={k} style={{ display:'flex', gap:'10px', padding:'4px 12px', fontSize:'10px' }}>
+                            <span style={{ color:'#2EC4F3', minWidth:'80px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                            <span style={{ color:'#F7CC76', fontWeight:'bold' }}>{String(v)}</span>
                           </div>
                         );
-                      }
-                      // Simple key-value
-                      return (
-                        <div key={k} style={{ display:'flex', gap:'8px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
-                          <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                          <span style={{ color:'#ccc', flex:1 }}>{String(v)}</span>
-                        </div>
-                      );
-                    })}
+                      })
+                    ) : (
+                      // Render as clean key-value pairs
+                      entries.map(([k, v]) => {
+                        // Sub-object with multiple fields (e.g. images: {total, withAlt, withoutAlt})
+                        if (v && typeof v === 'object' && !Array.isArray(v)) {
+                          return (
+                            <div key={k} style={{ padding:'6px 12px', marginBottom:'4px', background:'#0C1526', borderRadius:'3px' }}>
+                              <div style={{ color:'#2EC4F3', fontSize:'10px', fontWeight:'bold', marginBottom:'4px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</div>
+                              <div style={{ display:'flex', flexWrap:'wrap', gap:'12px' }}>
+                                {Object.entries(v).map(([sk, sv]) => (
+                                  <div key={sk} style={{ fontSize:'9px' }}>
+                                    <span style={{ color:'#666', textTransform:'capitalize' }}>{sk.replace(/([A-Z])/g, ' $1')}: </span>
+                                    <span style={{ color:'#ccc' }}>{Array.isArray(sv) ? sv.join(', ') : String(sv)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        // Array values
+                        if (Array.isArray(v)) {
+                          return (
+                            <div key={k} style={{ display:'flex', gap:'10px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
+                              <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                              <span style={{ color:'#ccc', flex:1, lineHeight:'1.5' }}>{v.join(', ')}</span>
+                            </div>
+                          );
+                        }
+                        // Simple values
+                        return (
+                          <div key={k} style={{ display:'flex', gap:'10px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
+                            <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                            <span style={{ color:'#ccc', flex:1 }}>{String(v)}</span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 );
               })}
