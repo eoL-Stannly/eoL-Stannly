@@ -94,7 +94,7 @@ export default function App() {
     running: false, loopCount: 0, callsThisHour: 0, maxCallsPerHour: 100, uptime: 0,
   });
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [showPanel, setShowPanel] = useState('tasks');
+  const [showPanel, setShowPanel] = useState('reports');
   const [serverConnected, setServerConnected] = useState(false);
   const [configTask, setConfigTask] = useState(null);
   const [activeSeoTool, setActiveSeoTool] = useState(null);
@@ -585,12 +585,6 @@ export default function App() {
             <span className="right-header-divider">·</span>
             <span className="right-header-label">SEO TOOLKIT</span>
           </div>
-          <div className="ctrl-stats">
-            <span>Active: {agents.filter((a) => a.state !== AGENT_STATES.IDLE).length}/{agents.length}</span>
-            <span className={`server-status ${serverConnected ? 'server-on' : 'server-off'}`}>
-              {serverConnected ? 'CONNECTED' : 'LOCAL'}
-            </span>
-          </div>
         </div>
 
         {/* SEO Tool Quick Actions */}
@@ -611,16 +605,9 @@ export default function App() {
         </div>
 
         <div className="right-tabs">
-          <button className={`tab-btn ${showPanel === 'tasks' ? 'tab-active' : ''}`} onClick={() => setShowPanel('tasks')}>
-            Tasks
-            <span className="tab-count">{tasks.length}</span>
-          </button>
-          <button className={`tab-btn ${showPanel === 'reports' ? 'tab-active' : ''}`} onClick={() => setShowPanel('reports')}>
+          <button className={`tab-btn ${showPanel === 'reports' || showPanel === 'tasks' ? 'tab-active' : ''}`} onClick={() => setShowPanel('reports')}>
             Reports
             {auditHistory.length > 0 && <span className="tab-count">{auditHistory.length}</span>}
-          </button>
-          <button className={`tab-btn ${showPanel === 'knowledge' ? 'tab-active' : ''}`} onClick={() => setShowPanel('knowledge')}>
-            Knowledge Base
           </button>
           <button className={`tab-btn ${showPanel === 'activity' ? 'tab-active' : ''}`} onClick={() => setShowPanel('activity')}>
             Log
@@ -629,14 +616,10 @@ export default function App() {
         </div>
 
         <div className="right-panel">
-          {showPanel === 'knowledge' ? (
-            <KnowledgePanel />
-          ) : showPanel === 'activity' ? (
+          {showPanel === 'activity' ? (
             <ActivityFeed activities={activities} />
-          ) : showPanel === 'reports' ? (
-            <AuditReportsPanel history={auditHistory} onViewReport={(audit) => { setShowPageAudit(true); window._preloadAudit = audit; }} />
           ) : (
-            <TaskPanel tasks={tasks} onSubmitTask={submitTask} />
+            <AuditReportsPanel history={auditHistory} onViewReport={(audit) => { setActiveSeoTool({ command: audit._meta?.command || 'content', label: audit._meta?.label || 'Report', agent: 'ewan', desc: 'View report', _preload: audit }); }} />
           )}
         </div>
       </div>

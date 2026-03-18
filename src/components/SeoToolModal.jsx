@@ -85,13 +85,13 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(tool._preload || null);
   const [showExport, setShowExport] = useState(false);
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
   const pf = '"Press Start 2P", monospace';
   const agent = tool.agent || 'ewan';
-  const agentName = { rob: 'Rob', craig: 'Craig', leo: 'Leo', ewan: 'Ewan', mya: 'Mya', alex: 'Alex', ken: 'Ken' }[agent] || 'Ewan';
+  const agentName = { rob: 'Rob', mike: 'Mike', craig: 'Craig', leo: 'Leo', ewan: 'Ewan', mya: 'Mya', alex: 'Alex', ken: 'Ken' }[agent] || 'Ewan';
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
   useEffect(() => { if (result && resultsRef.current) resultsRef.current.scrollTop = 0; }, [result]);
