@@ -53,32 +53,38 @@ Rules:
 - Format your response as clean text. Use **bold** for emphasis and \`code\` for technical terms.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        system: systemPrompt,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: context ? `Context from previous Q&A:\n${context}\n\nNew question: ${question}` : question,
-        }],
-      }),
-    });
+    // Retry on 429/529
+    let data;
+    for (let attempt = 0; attempt <= 2; attempt++) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: systemPrompt,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{
+            role: 'user',
+            content: context ? `Context from previous Q&A:\n${context}\n\nNew question: ${question}` : question,
+          }],
+        }),
+      });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('API error:', res.status, errText.substring(0, 300));
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Service unavailable. Try again.' }) };
+      if (res.status === 429 || res.status === 529) {
+        if (attempt < 2) { await new Promise(r => setTimeout(r, 2000 * Math.pow(2, attempt))); continue; }
+        return { statusCode: 200, headers, body: JSON.stringify({ error: 'Rate limited. Wait a moment and try again.' }) };
+      }
+      if (!res.ok) {
+        return { statusCode: 200, headers, body: JSON.stringify({ error: `API error (${res.status}). Try again.` }) };
+      }
+      data = await res.json();
+      break;
     }
-
-    const data = await res.json();
     const textBlocks = (data.content || []).filter(b => b.type === 'text');
     const answer = textBlocks.map(b => b.text).join('');
 
