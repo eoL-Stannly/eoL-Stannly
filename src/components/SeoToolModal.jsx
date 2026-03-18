@@ -362,13 +362,13 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
                 return Array.isArray(val) && val.length > 0;
               }).map(([key, val]) => (
                 <div key={key}>
-                  <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
+                  <div style={{ color:'#0047AB', fontSize:'14px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
                   {val.map((item, i) => {
                     const n = normaliseListItem(item);
                     return (
-                      <div key={i} style={{ padding:'6px 10px', marginBottom:'3px', background: i % 2 === 0 ? '#0C1526' : 'transparent', borderRadius:'2px', fontSize:'13px' }}>
+                      <div key={i} style={{ padding:'5px 10px', marginBottom:'2px', background: i % 2 === 0 ? '#0C1526' : 'transparent', borderRadius:'2px', fontSize:'10px', lineHeight:'1.6' }}>
                         <span style={{ color:'#2EC4F3', fontWeight:'bold' }}>{n.label}</span>
-                        {n.detail && <span style={{ color:'#999', marginLeft:'8px' }}>{n.detail}</span>}
+                        {n.detail && <div style={{ color:'#888', marginTop:'2px', fontSize:'9px' }}>{n.detail}</div>}
                       </div>
                     );
                   })}
@@ -384,27 +384,54 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
                 if (entries.length === 0) return null;
                 return (
                   <div key={key}>
-                    <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
-                    {entries.map(([k, v]) => (
-                      <div key={k} style={{ display:'flex', gap:'6px', padding:'3px 0', borderBottom:'1px solid #162240', fontSize:'13px' }}>
-                        <span style={{ color:'#2EC4F3', minWidth:'80px' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                        <span style={{ color:'#ccc', flex:1 }}>{typeof v === 'object' ? (Array.isArray(v) ? v.join(', ') : JSON.stringify(v)) : String(v)}</span>
-                      </div>
-                    ))}
+                    <div style={{ color:'#0047AB', fontSize:'14px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
+                    {entries.map(([k, v]) => {
+                      // Handle nested sub-objects (e.g. eeat.experience = {score, signals})
+                      if (v && typeof v === 'object' && !Array.isArray(v)) {
+                        const subEntries = Object.entries(v);
+                        return (
+                          <div key={k} style={{ padding:'6px 10px', marginBottom:'4px', background:'#0C1526', borderRadius:'3px' }}>
+                            <div style={{ color:'#2EC4F3', fontSize:'10px', fontWeight:'bold', marginBottom:'4px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</div>
+                            {subEntries.map(([sk, sv]) => (
+                              <div key={sk} style={{ display:'flex', gap:'8px', padding:'2px 0', fontSize:'9px' }}>
+                                <span style={{ color:'#666', minWidth:'70px', textTransform:'capitalize' }}>{sk.replace(/([A-Z])/g, ' $1')}</span>
+                                <span style={{ color:'#ccc', flex:1, lineHeight:'1.5' }}>{Array.isArray(sv) ? sv.join(', ') : String(sv)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      // Handle arrays as comma-separated values
+                      if (Array.isArray(v)) {
+                        return (
+                          <div key={k} style={{ display:'flex', gap:'8px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
+                            <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                            <span style={{ color:'#ccc', flex:1, lineHeight:'1.5' }}>{v.join(', ')}</span>
+                          </div>
+                        );
+                      }
+                      // Simple key-value
+                      return (
+                        <div key={k} style={{ display:'flex', gap:'8px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
+                          <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                          <span style={{ color:'#ccc', flex:1 }}>{String(v)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
 
               {/* Summary */}
               {result.summary && (<>
-                <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// SUMMARY</div>
-                <div style={{ background:'#0C1526', border:'1px solid #222', borderRadius:'3px', padding:'8px', color:'#ccc', lineHeight:'2', fontSize:'9px' }}>{result.summary}</div>
+                <div style={{ color:'#0047AB', fontSize:'14px', fontWeight:'bold', margin:'16px 0 8px' }}>// SUMMARY</div>
+                <div style={{ background:'#0C1526', border:'1px solid #222', borderRadius:'4px', padding:'10px 12px', color:'#ccc', lineHeight:'1.8', fontSize:'10px' }}>{result.summary}</div>
               </>)}
 
               {/* Full data viewer */}
               <details style={{ marginTop:'16px' }}>
-                <summary style={{ color:'#666', fontSize:'13px', cursor:'pointer' }}>View raw data</summary>
-                <div style={{ marginTop:'6px', padding:'8px', background:'#0C1526', borderRadius:'3px', fontSize:'13px', maxHeight:'300px', overflowY:'auto' }}>
+                <summary style={{ color:'#666', fontSize:'10px', cursor:'pointer' }}>View raw data</summary>
+                <div style={{ marginTop:'6px', padding:'8px', background:'#0C1526', borderRadius:'3px', fontSize:'9px', maxHeight:'300px', overflowY:'auto' }}>
                   <JsonViewer data={result} />
                 </div>
               </details>
