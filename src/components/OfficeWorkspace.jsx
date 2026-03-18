@@ -16,7 +16,7 @@ const STATE_CONFIG = {
 // Upload custom PFPs to /assets/avatars/{id}.png to override
 const AGENT_PFPS = {
   rob: '/assets/avatars/rob.png',
-  mike: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Itachi&size=200&backgroundColor=2c3e50',
+  mike: '/assets/avatars/mike.png',
   craig: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Naruto&size=200&backgroundColor=27ae60',
   leo: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Goku&size=200&backgroundColor=8e44ad',
   ewan: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Trunks&size=200&backgroundColor=0047ab',
