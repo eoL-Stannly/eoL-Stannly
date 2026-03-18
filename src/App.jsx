@@ -9,7 +9,7 @@ import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
 
 const SEO_TASK_BUTTONS = [
-  { label: 'Full Audit', icon: '🔍', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob' },
+  { label: 'General Audit', icon: '🔍', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob' },
   { label: 'Page Analysis', icon: '📄', desc: 'Deep single-page analysis', command: 'page', agent: 'ewan' },
   { label: 'Technical SEO', icon: '⚙️', desc: 'Technical SEO (crawlability, indexability, CWV)', command: 'technical', agent: 'rob' },
   { label: 'Content Audit', icon: '✍️', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan' },
