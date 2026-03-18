@@ -12,11 +12,10 @@ const STATE_CONFIG = {
   [AGENT_STATES.CELEBRATING]: { label: 'Done!', color: '#F7CC76', bg: 'rgba(247,204,118,0.08)' },
 };
 
-// Anime-style PFPs via DiceBear - seeded with iconic character names, matched by sex
-// Males: Rob, Mike, Craig, Leo, Ewan, Alex, Ken
-// Female: Mya
+// PFPs - local files for custom uploads, DiceBear fallback for others
+// Upload custom PFPs to /assets/avatars/{id}.png to override
 const AGENT_PFPS = {
-  rob: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Vegeta&size=200&backgroundColor=c0392b',
+  rob: '/assets/avatars/rob.png',
   mike: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Itachi&size=200&backgroundColor=2c3e50',
   craig: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Naruto&size=200&backgroundColor=27ae60',
   leo: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Goku&size=200&backgroundColor=8e44ad',
