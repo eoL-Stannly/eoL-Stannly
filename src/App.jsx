@@ -600,11 +600,10 @@ export default function App() {
           {SEO_TASK_BUTTONS.map((btn) => (
             <button
               key={btn.label}
-              className={`seo-task-btn${btn.special === 'page-audit' ? ' seo-task-btn--audit' : btn.command ? ' seo-task-btn--tool' : ''}`}
+              className={`seo-task-btn${btn.command ? ' seo-task-btn--tool' : ''}`}
               title={btn.desc}
               onClick={() => {
-                if (btn.special === 'page-audit') setShowPageAudit(true);
-                else if (btn.command) setActiveSeoTool(btn);
+                if (btn.command) setActiveSeoTool(btn);
                 else setConfigTask(btn);
               }}
             >
