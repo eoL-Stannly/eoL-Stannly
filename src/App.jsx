@@ -580,15 +580,15 @@ export default function App() {
 
       <div className="game-right">
         <div className="right-controls">
-          <button className={`ctrl-btn ralph-btn ${ralphStatus.running ? 'ralph-on' : ''}`} onClick={toggleRalph}>
-            <span className="ralph-dot"></span>
-            {ralphStatus.running ? 'RALPH ON' : 'START RALPH'}
-          </button>
+          <div className="right-header-brand">
+            <img src="/assets/ayima-logo.png" alt="Ayima" className="right-header-logo" />
+            <span className="right-header-divider">·</span>
+            <span className="right-header-label">SEO TOOLKIT</span>
+          </div>
           <div className="ctrl-stats">
-            <span>Loop: {ralphStatus.loopCount}</span>
             <span>Active: {agents.filter((a) => a.state !== AGENT_STATES.IDLE).length}/{agents.length}</span>
             <span className={`server-status ${serverConnected ? 'server-on' : 'server-off'}`}>
-              {serverConnected ? 'SERVER' : 'OFFLINE'}
+              {serverConnected ? 'CONNECTED' : 'LOCAL'}
             </span>
           </div>
         </div>

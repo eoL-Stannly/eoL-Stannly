@@ -755,43 +755,32 @@ body {
   border-bottom: 2px solid var(--panel-border);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
 }
 
-.ctrl-btn {
-  font-family: var(--pixel-font);
-  font-size: 11px;
-  padding: 8px 16px;
-  border: 2px solid var(--red);
-  background: transparent;
-  color: var(--red);
-  cursor: pointer;
-  border-radius: 2px;
+.right-header-brand {
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s;
 }
 
-.ctrl-btn:hover { background: rgba(231,76,60,0.15); }
-
-.ralph-btn.ralph-on {
-  border-color: var(--green);
-  color: var(--green);
+.right-header-logo {
+  height: 16px;
+  opacity: 0.9;
 }
 
-.ralph-btn.ralph-on:hover { background: rgba(76,175,80,0.15); }
-
-.ralph-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--red);
+.right-header-divider {
+  color: var(--text-dim);
+  font-size: 10px;
+  opacity: 0.4;
 }
 
-.ralph-on .ralph-dot {
-  background: var(--green);
-  animation: dot-pulse 1.5s ease-in-out infinite;
+.right-header-label {
+  font-family: var(--pixel-font);
+  font-size: 7px;
+  color: var(--ayima-accent);
+  letter-spacing: 2px;
 }
 
 .ctrl-stats {
@@ -801,6 +790,7 @@ body {
   font-family: var(--pixel-font);
   font-size: 6px;
   color: var(--text-dim);
+  text-align: right;
 }
 
 .server-status {
