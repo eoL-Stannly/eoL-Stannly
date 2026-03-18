@@ -123,22 +123,20 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
     ];
     const allTimers = [...progressTimers, ...agentTimers];
 
-    try {
-      const retryDelays = [0, 10000, 20000, 30000]; // immediate, then 10s, 20s, 30s
-      let lastError = '';
-
-      for (let attempt = 0; attempt < retryDelays.length; attempt++) {
-        if (attempt > 0) {
-          // Show countdown before retrying
-          const waitSec = retryDelays[attempt] / 1000;
-          for (let sec = waitSec; sec > 0; sec--) {
-            setProgress(`Rate limited — auto-retrying in ${sec}s (attempt ${attempt + 1}/3)...`);
-            if (onAgentSpeech) onAgentSpeech(agent, `Rate limited, retrying in ${sec}s...`);
-            await new Promise(r => setTimeout(r, 1000));
-          }
-          setProgress(`Retrying (attempt ${attempt + 1}/3)...`);
+    const retryDelays = [0, 15000, 25000, 35000]; // immediate, then 15s, 25s, 35s
+    
+    for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+      if (attempt > 0) {
+        const waitSec = retryDelays[attempt] / 1000;
+        for (let sec = waitSec; sec > 0; sec--) {
+          setProgress(`Request failed — auto-retrying in ${sec}s (attempt ${attempt + 1}/3)...`);
+          if (onAgentSpeech) onAgentSpeech(agent, `Retrying in ${sec}s...`);
+          await new Promise(r => setTimeout(r, 1000));
         }
+        setProgress(`Retrying (attempt ${attempt + 1}/3)...`);
+      }
 
+      try {
         const res = await fetch('/api/seo-tool', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -146,19 +144,17 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
         });
         const data = await res.json();
 
-        // Check if rate limited
-        if (data.error && (data.error.toLowerCase().includes('rate limit') || data.error.includes('429') || data.error.includes('busy'))) {
-          lastError = data.error;
-          if (attempt < retryDelays.length - 1) continue; // retry
-          // Final attempt failed
+        // Rate limited or server busy — retry
+        if (data.error && (data.error.toLowerCase().includes('rate limit') || data.error.includes('429') || data.error.includes('busy') || data.error.includes('503') || data.error.includes('overloaded'))) {
+          if (attempt < retryDelays.length - 1) continue;
           allTimers.forEach(clearTimeout);
-          setError('Rate limited after 3 retries. Please wait a minute and try again.');
+          setError('Service busy after 3 retries. Please wait a minute and try again.');
           setLoading(false);
           if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
           return;
         }
 
-        // Non-rate-limit error
+        // Other API error — don't retry
         if (data.error) {
           allTimers.forEach(clearTimeout);
           setError(data.error); setLoading(false);
@@ -175,11 +171,17 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
         if (addActivity) addActivity(agent, agentName, `Completed: ${tool.label} for ${testUrl}`, 'task_completed');
         setLoading(false); setProgress('');
         return;
+      } catch (e) {
+        // Network error (timeout, connection refused, function crash) — retry
+        console.error(`Attempt ${attempt + 1} failed:`, e.message);
+        if (attempt < retryDelays.length - 1) continue;
+        // All retries exhausted
+        allTimers.forEach(clearTimeout);
+        setError('Unable to reach the service after 3 attempts. The server may be overloaded — please try again shortly.');
+        setLoading(false);
+        if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
+        return;
       }
-    } catch (e) {
-      allTimers.forEach(clearTimeout);
-      setError('Network error: ' + (e.message || 'Check your connection.'));
-      if (onAgentState) { onAgentState(agent, 'idle'); onAgentState('mike', 'idle'); }
     }
     setLoading(false); setProgress('');
   };

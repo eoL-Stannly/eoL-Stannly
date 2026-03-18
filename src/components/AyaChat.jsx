@@ -26,24 +26,21 @@ export default function AyaChat({ onClose }) {
     const recent = messages.slice(-6);
     const context = recent.map(m => `${m.role === 'user' ? 'Q' : 'A'}: ${m.text}`).join('\n');
 
-    const retryDelays = [0, 10000, 20000, 30000];
-    let succeeded = false;
+    const retryDelays = [0, 15000, 25000, 35000];
 
-    try {
-      for (let attempt = 0; attempt < retryDelays.length; attempt++) {
-        if (attempt > 0) {
-          // Show countdown in a temporary message
-          const waitSec = retryDelays[attempt] / 1000;
-          const retryMsgId = Date.now();
-          setMessages(prev => [...prev, { role: 'aya', text: `Rate limited — auto-retrying in ${waitSec}s (attempt ${attempt + 1}/3)...`, time: new Date(), id: retryMsgId, retrying: true }]);
-          for (let sec = waitSec; sec > 0; sec--) {
-            setMessages(prev => prev.map(m => m.id === retryMsgId ? { ...m, text: `Rate limited — auto-retrying in ${sec}s (attempt ${attempt + 1}/3)...` } : m));
-            await new Promise(r => setTimeout(r, 1000));
-          }
-          // Remove the countdown message before retrying
-          setMessages(prev => prev.filter(m => m.id !== retryMsgId));
+    for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+      if (attempt > 0) {
+        const waitSec = retryDelays[attempt] / 1000;
+        const retryMsgId = Date.now();
+        setMessages(prev => [...prev, { role: 'aya', text: `Request failed — auto-retrying in ${waitSec}s (attempt ${attempt + 1}/3)...`, time: new Date(), id: retryMsgId, retrying: true }]);
+        for (let sec = waitSec; sec > 0; sec--) {
+          setMessages(prev => prev.map(m => m.id === retryMsgId ? { ...m, text: `Request failed — auto-retrying in ${sec}s (attempt ${attempt + 1}/3)...` } : m));
+          await new Promise(r => setTimeout(r, 1000));
         }
+        setMessages(prev => prev.filter(m => m.id !== retryMsgId));
+      }
 
+      try {
         const res = await fetch('/api/aya', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -51,21 +48,27 @@ export default function AyaChat({ onClose }) {
         });
         const data = await res.json();
 
-        if (data.error && (data.error.toLowerCase().includes('rate limit') || data.error.includes('429') || data.error.includes('busy'))) {
+        // Rate limited / server busy — retry
+        if (data.error && (data.error.toLowerCase().includes('rate limit') || data.error.includes('429') || data.error.includes('busy') || data.error.includes('503') || data.error.includes('unavailable'))) {
           if (attempt < retryDelays.length - 1) continue;
-          setMessages(prev => [...prev, { role: 'aya', text: 'Rate limited after 3 retries. Please wait a minute and try again.', time: new Date(), error: true }]);
-          succeeded = true; break;
+          setMessages(prev => [...prev, { role: 'aya', text: 'Service busy after 3 retries. Please wait a minute and try again.', time: new Date(), error: true }]);
+          break;
         }
 
+        // Other error — show it, don't retry
         if (data.error) {
           setMessages(prev => [...prev, { role: 'aya', text: `Error: ${data.error}`, time: new Date(), error: true }]);
         } else {
           setMessages(prev => [...prev, { role: 'aya', text: data.answer, time: new Date(), meta: data._meta }]);
         }
-        succeeded = true; break;
+        break;
+      } catch (e) {
+        // Network error (timeout, crash) — retry
+        console.error(`AYA attempt ${attempt + 1} failed:`, e.message);
+        if (attempt < retryDelays.length - 1) continue;
+        setMessages(prev => [...prev, { role: 'aya', text: 'Unable to reach AYA after 3 attempts. The server may be overloaded — please try again shortly.', time: new Date(), error: true }]);
+        break;
       }
-    } catch {
-      setMessages(prev => [...prev, { role: 'aya', text: 'Network error. Check your connection.', time: new Date(), error: true }]);
     }
     setLoading(false);
   };
