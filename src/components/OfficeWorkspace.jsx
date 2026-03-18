@@ -21,11 +21,17 @@ const AGENT_PFPS = {
   mya: '/assets/avatars/mya.png',
   alex: '/assets/avatars/alex.png',
   ken: '/assets/avatars/ken.png',
+  mark: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Mark&size=200&backgroundColor=e67e22',
+  kevin: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Kevin&size=200&backgroundColor=9b59b6',
+  julie: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Julie&size=200&backgroundColor=e91e63',
+  peter: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Peter&size=200&backgroundColor=3498db',
+  katie: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Katie&size=200&backgroundColor=2ecc71',
 };
 
 const AGENT_COLORS = {
   rob: '#C0392B', mike: '#2C3E50', craig: '#27AE60', leo: '#8E44AD',
   ewan: '#0047AB', mya: '#C2185B', alex: '#00897B', ken: '#1565C0',
+  mark: '#E67E22', kevin: '#9B59B6', julie: '#E91E63', peter: '#3498DB', katie: '#2ECC71',
 };
 
 function AvatarImg({ agentId, name, size, borderColor, isActive }) {
@@ -193,7 +199,7 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
         alignContent: 'start',
       }}>
         {(() => {
-          const order = ['mike', 'rob', 'ewan', 'leo', 'craig', 'alex', 'ken', 'mya'];
+          const order = ['mike', 'rob', 'ewan', 'leo', 'craig', 'mark', 'kevin', 'alex', 'ken', 'julie', 'peter', 'katie', 'mya'];
           const sorted = [...agents].sort((a, b) => {
             const ai = order.indexOf(a.id);
             const bi = order.indexOf(b.id);

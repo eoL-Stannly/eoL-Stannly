@@ -91,7 +91,7 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
   const resultsRef = useRef(null);
   const pf = '"Press Start 2P", monospace';
   const agent = tool.agent || 'ewan';
-  const agentName = { rob: 'Rob', mike: 'Mike', craig: 'Craig', leo: 'Leo', ewan: 'Ewan', mya: 'Mya', alex: 'Alex', ken: 'Ken' }[agent] || 'Ewan';
+  const agentName = { rob: 'Rob', mike: 'Mike', craig: 'Craig', leo: 'Leo', ewan: 'Ewan', mya: 'Mya', alex: 'Alex', ken: 'Ken', mark: 'Mark', kevin: 'Kevin', julie: 'Julie', peter: 'Peter', katie: 'Katie' }[agent] || 'Ewan';
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
   useEffect(() => { if (result && resultsRef.current) resultsRef.current.scrollTop = 0; }, [result]);
