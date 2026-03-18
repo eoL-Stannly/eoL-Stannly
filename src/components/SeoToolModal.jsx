@@ -383,90 +383,97 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
                 const entries = Object.entries(val).filter(([, v]) => v !== null && v !== undefined);
                 if (entries.length === 0) return null;
 
-                // Check if this is an E-E-A-T style object (sub-objects with score fields)
-                const hasScoreChildren = entries.some(([, v]) => v && typeof v === 'object' && !Array.isArray(v) && typeof v.score === 'number');
+                // Detect score-bearing sub-objects: any child that is an object with a 'score' key
+                const hasScoreChildren = entries.some(([, v]) => {
+                  if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+                  return 'score' in v;
+                });
+
+                // Helper to render any value nicely (no raw JSON ever)
+                const renderValue = (v) => {
+                  if (v === null || v === undefined) return '—';
+                  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+                  if (Array.isArray(v)) return v.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');
+                  if (typeof v === 'object') {
+                    return Object.entries(v).map(([k2, v2]) => `${k2}: ${Array.isArray(v2) ? v2.join(', ') : String(v2)}`).join(' · ');
+                  }
+                  return String(v);
+                };
 
                 return (
                   <div key={key}>
                     <div style={{ color:'#0047AB', fontSize:'14px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
 
-                    {hasScoreChildren ? (
-                      // Render as score cards (E-E-A-T style)
-                      entries.map(([k, v]) => {
-                        if (v && typeof v === 'object' && !Array.isArray(v) && typeof v.score === 'number') {
-                          const maxScore = key === 'eeat' ? 25 : 100;
-                          const pct = (v.score / maxScore) * 100;
-                          const barColor = pct >= 70 ? '#20C997' : pct >= 50 ? '#F7CC76' : pct >= 30 ? '#F08D34' : '#D34F2D';
-                          const signals = v.signals || v.description || v.details || '';
-                          const signalText = Array.isArray(signals) ? signals.join(' · ') : String(signals);
-                          return (
-                            <div key={k} style={{ padding:'8px 12px', marginBottom:'6px', background:'#0C1526', borderRadius:'4px', borderLeft:`3px solid ${barColor}` }}>
-                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
-                                <span style={{ color:'#F0F4F7', fontSize:'10px', fontWeight:'bold', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                                <span style={{ color: barColor, fontSize:'10px', fontWeight:'bold' }}>{v.score}/{maxScore}</span>
-                              </div>
-                              <div style={{ height:'5px', background:'#162240', borderRadius:'3px', overflow:'hidden', marginBottom:'5px' }}>
-                                <div style={{ height:'100%', width:`${pct}%`, background: barColor, borderRadius:'3px' }} />
-                              </div>
-                              {signalText && <div style={{ color:'#888', fontSize:'9px', lineHeight:'1.6' }}>{signalText}</div>}
+                    {entries.map(([k, v]) => {
+                      // Score card: object with a 'score' field
+                      if (v && typeof v === 'object' && !Array.isArray(v) && 'score' in v) {
+                        const score = Number(v.score) || 0;
+                        const maxScore = (key === 'eeat' || key === 'e_e_a_t') ? 25 : 100;
+                        const pct = Math.min((score / maxScore) * 100, 100);
+                        const barColor = pct >= 70 ? '#20C997' : pct >= 50 ? '#F7CC76' : pct >= 30 ? '#F08D34' : '#D34F2D';
+                        // Get signals/description from any field that isn't 'score'
+                        const descFields = Object.entries(v).filter(([fk]) => fk !== 'score');
+                        const descText = descFields.map(([, fv]) => Array.isArray(fv) ? fv.join(' · ') : String(fv)).join(' — ');
+
+                        return (
+                          <div key={k} style={{ padding:'8px 12px', marginBottom:'6px', background:'#0C1526', borderRadius:'4px', borderLeft:`3px solid ${barColor}` }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
+                              <span style={{ color:'#F0F4F7', fontSize:'10px', fontWeight:'bold', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                              <span style={{ color: barColor, fontSize:'10px', fontWeight:'bold' }}>{score}/{maxScore}</span>
                             </div>
-                          );
-                        }
-                        // Non-score entries in the same object (like overall, rating)
-                        if (typeof v === 'number') {
-                          const pct = v > 25 ? v : v * 4; // normalize if out of 25
-                          const barColor = pct >= 70 ? '#20C997' : pct >= 50 ? '#F7CC76' : pct >= 30 ? '#F08D34' : '#D34F2D';
+                            <div style={{ height:'5px', background:'#162240', borderRadius:'3px', overflow:'hidden', marginBottom: descText ? '5px' : '0' }}>
+                              <div style={{ height:'100%', width:`${pct}%`, background: barColor, borderRadius:'3px', transition:'width 0.5s' }} />
+                            </div>
+                            {descText && <div style={{ color:'#888', fontSize:'9px', lineHeight:'1.6' }}>{descText}</div>}
+                          </div>
+                        );
+                      }
+
+                      // Numeric value with possible score meaning
+                      if (typeof v === 'number') {
+                        const isScore = k.includes('core') || k.includes('verall') || v <= 100;
+                        if (isScore && v <= 100) {
+                          const barColor = v >= 70 ? '#20C997' : v >= 50 ? '#F7CC76' : v >= 30 ? '#F08D34' : '#D34F2D';
                           return (
                             <div key={k} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'4px 12px', fontSize:'10px' }}>
-                              <span style={{ color:'#2EC4F3', minWidth:'80px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                              <span style={{ color: barColor, fontWeight:'bold' }}>{v}{v <= 100 ? '/100' : ''}</span>
+                              <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                              <span style={{ color: barColor, fontWeight:'bold' }}>{v}/100</span>
                             </div>
                           );
                         }
                         return (
                           <div key={k} style={{ display:'flex', gap:'10px', padding:'4px 12px', fontSize:'10px' }}>
-                            <span style={{ color:'#2EC4F3', minWidth:'80px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                            <span style={{ color:'#F7CC76', fontWeight:'bold' }}>{String(v)}</span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      // Render as clean key-value pairs
-                      entries.map(([k, v]) => {
-                        // Sub-object with multiple fields (e.g. images: {total, withAlt, withoutAlt})
-                        if (v && typeof v === 'object' && !Array.isArray(v)) {
-                          return (
-                            <div key={k} style={{ padding:'6px 12px', marginBottom:'4px', background:'#0C1526', borderRadius:'3px' }}>
-                              <div style={{ color:'#2EC4F3', fontSize:'10px', fontWeight:'bold', marginBottom:'4px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</div>
-                              <div style={{ display:'flex', flexWrap:'wrap', gap:'12px' }}>
-                                {Object.entries(v).map(([sk, sv]) => (
-                                  <div key={sk} style={{ fontSize:'9px' }}>
-                                    <span style={{ color:'#666', textTransform:'capitalize' }}>{sk.replace(/([A-Z])/g, ' $1')}: </span>
-                                    <span style={{ color:'#ccc' }}>{Array.isArray(sv) ? sv.join(', ') : String(sv)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        }
-                        // Array values
-                        if (Array.isArray(v)) {
-                          return (
-                            <div key={k} style={{ display:'flex', gap:'10px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
-                              <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                              <span style={{ color:'#ccc', flex:1, lineHeight:'1.5' }}>{v.join(', ')}</span>
-                            </div>
-                          );
-                        }
-                        // Simple values
-                        return (
-                          <div key={k} style={{ display:'flex', gap:'10px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px' }}>
                             <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
-                            <span style={{ color:'#ccc', flex:1 }}>{String(v)}</span>
+                            <span style={{ color:'#ccc' }}>{v}</span>
                           </div>
                         );
-                      })
-                    )}
+                      }
+
+                      // Sub-object without score (e.g. images: {total, withAlt, withoutAlt})
+                      if (v && typeof v === 'object' && !Array.isArray(v)) {
+                        return (
+                          <div key={k} style={{ padding:'6px 12px', marginBottom:'4px', background:'#0C1526', borderRadius:'3px' }}>
+                            <div style={{ color:'#2EC4F3', fontSize:'10px', fontWeight:'bold', marginBottom:'4px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</div>
+                            <div style={{ display:'flex', flexWrap:'wrap', gap:'12px' }}>
+                              {Object.entries(v).map(([sk, sv]) => (
+                                <div key={sk} style={{ fontSize:'9px' }}>
+                                  <span style={{ color:'#666', textTransform:'capitalize' }}>{sk.replace(/([A-Z])/g, ' $1')}: </span>
+                                  <span style={{ color:'#ccc' }}>{renderValue(sv)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Array or string value
+                      return (
+                        <div key={k} style={{ display:'flex', gap:'10px', padding:'4px 0', borderBottom:'1px solid #162240', fontSize:'10px', paddingLeft:'12px' }}>
+                          <span style={{ color:'#2EC4F3', minWidth:'100px', textTransform:'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+                          <span style={{ color:'#ccc', flex:1, lineHeight:'1.5' }}>{renderValue(v)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
