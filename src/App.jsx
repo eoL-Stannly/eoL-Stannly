@@ -9,18 +9,18 @@ import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
 
 const SEO_TASK_BUTTONS = [
-  { label: 'Full Audit', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob' },
-  { label: 'Page Analysis', desc: 'Deep single-page analysis', command: 'page', agent: 'ewan' },
-  { label: 'Technical SEO', desc: 'Technical SEO (crawlability, indexability, CWV)', command: 'technical', agent: 'rob' },
-  { label: 'Content Audit', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan' },
-  { label: 'Schema Markup', desc: 'Schema markup detection & generation', command: 'schema', agent: 'leo' },
-  { label: 'Image SEO', desc: 'Image optimization analysis', command: 'images', agent: 'craig' },
-  { label: 'Sitemap', desc: 'Sitemap analysis or generation', command: 'sitemap', agent: 'alex' },
-  { label: 'GEO / AI Search', desc: 'AI Overviews / GEO optimization', command: 'geo', agent: 'leo' },
-  { label: 'SEO Plan', desc: 'Strategic SEO planning', command: 'plan', agent: 'ewan' },
-  { label: 'Programmatic', desc: 'Programmatic SEO analysis', command: 'programmatic', agent: 'alex' },
-  { label: 'Competitors', desc: 'Competitor comparison pages', command: 'competitor-pages', agent: 'craig' },
-  { label: 'Hreflang', desc: 'Hreflang/i18n audit', command: 'hreflang', agent: 'ken' },
+  { label: 'Full Audit', icon: '🔍', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob' },
+  { label: 'Page Analysis', icon: '📄', desc: 'Deep single-page analysis', command: 'page', agent: 'ewan' },
+  { label: 'Technical SEO', icon: '⚙️', desc: 'Technical SEO (crawlability, indexability, CWV)', command: 'technical', agent: 'rob' },
+  { label: 'Content Audit', icon: '✍️', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan' },
+  { label: 'Schema Markup', icon: '🧩', desc: 'Schema markup detection & generation', command: 'schema', agent: 'leo' },
+  { label: 'Image SEO', icon: '🖼️', desc: 'Image optimization analysis', command: 'images', agent: 'craig' },
+  { label: 'Sitemap', icon: '🗺️', desc: 'Sitemap analysis or generation', command: 'sitemap', agent: 'alex' },
+  { label: 'GEO / AI Search', icon: '🤖', desc: 'AI Overviews / GEO optimization', command: 'geo', agent: 'leo' },
+  { label: 'SEO Plan', icon: '📋', desc: 'Strategic SEO planning', command: 'plan', agent: 'ewan' },
+  { label: 'Programmatic', icon: '🔁', desc: 'Programmatic SEO analysis', command: 'programmatic', agent: 'alex' },
+  { label: 'Competitors', icon: '⚔️', desc: 'Competitor comparison pages', command: 'competitor-pages', agent: 'craig' },
+  { label: 'Hreflang', icon: '🌐', desc: 'Hreflang/i18n audit', command: 'hreflang', agent: 'ken' },
 ];
 
 const IDLE_CHATTER = [
@@ -592,14 +592,14 @@ export default function App() {
           {SEO_TASK_BUTTONS.map((btn) => (
             <button
               key={btn.label}
-              className={`seo-task-btn${btn.command ? ' seo-task-btn--tool' : ''}`}
+              className="seo-task-btn seo-task-btn--tool"
               title={btn.desc}
               onClick={() => {
                 if (btn.command) setActiveSeoTool(btn);
-                else setConfigTask(btn);
               }}
             >
-              {btn.label}
+              <span className="seo-btn-icon">{btn.icon}</span>
+              <span className="seo-btn-label">{btn.label}</span>
             </button>
           ))}
         </div>
