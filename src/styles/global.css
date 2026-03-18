@@ -62,8 +62,8 @@ body {
 }
 
 .game-right {
-  width: 320px;
-  min-width: 320px;
+  width: 420px;
+  min-width: 420px;
   background: var(--panel-bg);
   border-left: 4px solid var(--panel-border);
   display: flex;
@@ -760,8 +760,8 @@ body {
 
 .ctrl-btn {
   font-family: var(--pixel-font);
-  font-size: 7px;
-  padding: 6px 12px;
+  font-size: 11px;
+  padding: 8px 16px;
   border: 2px solid var(--red);
   background: transparent;
   color: var(--red);
@@ -864,7 +864,7 @@ body {
 
 .panel-title {
   font-family: var(--pixel-font);
-  font-size: 7px;
+  font-size: 12px;
   color: var(--gold);
   margin-bottom: 8px;
   display: flex;
@@ -882,12 +882,12 @@ body {
 
 .task-input {
   flex: 1;
-  padding: 6px 8px;
+  padding: 8px 12px;
   background: var(--ayima-dark);
   border: 2px solid var(--panel-border);
   color: var(--text-light);
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   border-radius: 2px;
   outline: none;
 }
@@ -896,12 +896,12 @@ body {
 .task-input::placeholder { color: var(--text-dim); }
 
 .task-submit-btn {
-  padding: 6px 10px;
+  padding: 8px 14px;
   background: var(--gold);
   border: none;
   color: #1a1a1a;
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   cursor: pointer;
   border-radius: 2px;
 }
@@ -919,7 +919,7 @@ body {
 .task-empty {
   color: var(--text-dim);
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   text-align: center;
   padding: 12px;
   line-height: 1.6;
@@ -1021,7 +1021,7 @@ body {
 
 .task-progress-text {
   font-family: var(--pixel-font);
-  font-size: 5px;
+  font-size: 9px;
   color: var(--ayima-accent);
   animation: text-blink 2s ease-in-out infinite;
 }
@@ -1363,7 +1363,7 @@ body {
 
 .task-config-subtitle {
   font-family: var(--pixel-font);
-  font-size: 5px;
+  font-size: 9px;
   color: var(--text-dim);
   padding: 2px 14px 8px;
   line-height: 1.6;
@@ -1395,7 +1395,7 @@ body {
 
 .task-config-textarea {
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   background: var(--ayima-dark);
   border: 1px solid var(--panel-border);
   border-radius: 2px;
@@ -1427,7 +1427,7 @@ body {
 .task-config-input {
   flex: 1;
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   background: var(--ayima-dark);
   border: 1px solid var(--panel-border);
   border-radius: 2px;
@@ -1437,7 +1437,7 @@ body {
 
 .task-config-add-btn {
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   background: var(--ayima-mid);
   border: 1px solid var(--panel-border);
   color: var(--text-light);
@@ -1560,7 +1560,7 @@ body {
 
 .task-config-select {
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   background: var(--ayima-dark);
   border: 1px solid var(--panel-border);
   border-radius: 2px;
@@ -1579,7 +1579,7 @@ body {
 
 .task-config-cancel {
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   background: none;
   border: 1px solid var(--panel-border);
   color: var(--text-dim);
@@ -1595,7 +1595,7 @@ body {
 
 .task-config-submit {
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   background: var(--ayima-accent);
   border: none;
   color: var(--ayima-dark);
@@ -1651,14 +1651,14 @@ body {
 
 .feed-agent-name {
   font-family: var(--pixel-font);
-  font-size: 6px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--gold);
 }
 
 .feed-time {
   font-family: var(--pixel-font);
-  font-size: 5px;
+  font-size: 8px;
   color: var(--text-dim);
 }
 
@@ -2777,8 +2777,8 @@ body {
 
 .seo-task-btn {
   font-family: var(--pixel-font);
-  font-size: 5px;
-  padding: 5px 8px;
+  font-size: 9px;
+  padding: 7px 12px;
   background: rgba(46,196,243,0.08);
   border: 1px solid var(--ayima-mid);
   color: var(--ayima-accent);

@@ -223,54 +223,54 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
   return (
     <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.88)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}
       onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}>
-      <div style={{ background:'#091E2A', border:'2px solid #144B63', borderRadius:'4px', width: result ? '700px' : '480px', maxWidth:'95vw', maxHeight:'90vh', display:'flex', flexDirection:'column', fontFamily:pf, transition:'width 0.3s' }}
+      <div style={{ background:'#091E2A', border:'2px solid #144B63', borderRadius:'4px', width: result ? '800px' : '540px', maxWidth:'95vw', maxHeight:'90vh', display:'flex', flexDirection:'column', fontFamily:pf, transition:'width 0.3s' }}
         onClick={(e) => e.stopPropagation()}>
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 16px 10px', borderBottom:'1px solid #144B63' }}>
-          <div style={{ fontSize:'8px', color:'#2EC4F3', display:'flex', alignItems:'center', gap:'6px' }}>
-            <span style={{ fontSize:'12px' }}>🔍</span> {tool.label.toUpperCase()}
+          <div style={{ fontSize:'13px', color:'#2EC4F3', display:'flex', alignItems:'center', gap:'6px' }}>
+            <span style={{ fontSize:'16px' }}>🔍</span> {tool.label.toUpperCase()}
           </div>
-          <button onClick={onClose} style={{ background:'none', border:'1px solid #444', color:'#999', fontFamily:pf, fontSize:'6px', cursor:'pointer', padding:'3px 6px', borderRadius:'2px' }}>ESC</button>
+          <button onClick={onClose} style={{ background:'none', border:'1px solid #444', color:'#999', fontFamily:pf, fontSize:'10px', cursor:'pointer', padding:'5px 10px', borderRadius:'2px' }}>ESC</button>
         </div>
 
         <div style={{ padding:'16px', overflowY:'auto', flex:1 }} ref={resultsRef}>
           {!result && (<>
-            <div style={{ fontSize:'5px', color:'#999', lineHeight:'1.8', marginBottom:'14px' }}>
+            <div style={{ fontSize:'9px', color:'#999', lineHeight:'1.8', marginBottom:'14px' }}>
               {tool.desc}<br/>Powered by Claude AI · Agent: {agentName}
             </div>
-            <label style={{ fontSize:'5px', color:'#2EC4F3', display:'block', marginBottom:'6px' }}>TARGET URL</label>
+            <label style={{ fontSize:'9px', color:'#2EC4F3', display:'block', marginBottom:'6px' }}>TARGET URL</label>
             <div style={{ display:'flex', alignItems:'center', background:'#0A1E2A', border:'1.6px solid #1A4B63', borderRadius:'3px', padding:'2px' }}>
-              <span style={{ fontSize:'6px', color:'#2EC4F3', padding:'4px 6px', opacity:0.6 }}>{'>'}</span>
-              <input ref={inputRef} style={{ flex:1, background:'transparent', border:'none', outline:'none', color:'#F0F4F7', fontFamily:pf, fontSize:'6px', padding:'6px 4px' }}
+              <span style={{ fontSize:'10px', color:'#2EC4F3', padding:'4px 6px', opacity:0.6 }}>{'>'}</span>
+              <input ref={inputRef} style={{ flex:1, background:'transparent', border:'none', outline:'none', color:'#F0F4F7', fontFamily:pf, fontSize:'10px', padding:'6px 4px' }}
                 type="text" value={url} onChange={(e) => { setUrl(e.target.value); setError(''); }} onKeyDown={handleKeyDown}
                 placeholder="https://example.com/page" disabled={loading} />
             </div>
-            {error && <div style={{ fontSize:'5px', color:'#D34F2D', marginTop:'8px' }}>⚠ {error}</div>}
+            {error && <div style={{ fontSize:'9px', color:'#D34F2D', marginTop:'8px' }}>⚠ {error}</div>}
             {loading ? (
-              <div style={{ fontSize:'5px', color:'#2EC4F3', textAlign:'center', padding:'24px 0' }}>
+              <div style={{ fontSize:'9px', color:'#2EC4F3', textAlign:'center', padding:'24px 0' }}>
                 <div style={{ marginBottom:'8px' }}>⏳ {progress}</div>
                 <div style={{ height:'3px', background:'#144B63', borderRadius:'2px', overflow:'hidden' }}>
                   <div style={{ height:'100%', background:'#2EC4F3', borderRadius:'2px', animation:'auditPulse 2s ease-in-out infinite', width:'60%' }} />
                 </div>
                 <style>{`@keyframes auditPulse{0%,100%{opacity:.4;width:30%}50%{opacity:1;width:80%}}`}</style>
-                <div style={{ marginTop:'8px', fontSize:'4px', color:'#666' }}>{agentName} is working on this...</div>
+                <div style={{ marginTop:'8px', fontSize:'16px', color:'#666' }}>{agentName} is working on this...</div>
               </div>
             ) : (
-              <button onClick={runTool} disabled={!url.trim()} style={{ fontFamily:pf, fontSize:'6px', padding:'8px 16px', border:'none', borderRadius:'3px', cursor:'pointer', marginTop:'12px', background:'#2EC4F3', color:'#0A1E2A', width:'100%', opacity: url.trim() ? 1 : 0.4, fontWeight:'bold' }}>RUN /SEO {tool.command.toUpperCase()}</button>
+              <button onClick={runTool} disabled={!url.trim()} style={{ fontFamily:pf, fontSize:'10px', padding:'8px 16px', border:'none', borderRadius:'3px', cursor:'pointer', marginTop:'12px', background:'#2EC4F3', color:'#0A1E2A', width:'100%', opacity: url.trim() ? 1 : 0.4, fontWeight:'bold' }}>RUN /SEO {tool.command.toUpperCase()}</button>
             )}
           </>)}
 
           {result && (
-            <div style={{ fontSize:'5px', color:'#F0F4F7', lineHeight:'1.7' }}>
+            <div style={{ fontSize:'9px', color:'#F0F4F7', lineHeight:'1.7' }}>
               {/* Actions bar */}
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'14px' }}>
-                <button onClick={() => setResult(null)} style={{ background:'none', border:'1px solid #144B63', color:'#2EC4F3', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>← NEW</button>
+                <button onClick={() => setResult(null)} style={{ background:'none', border:'1px solid #144B63', color:'#2EC4F3', fontFamily:pf, fontSize:'9px', cursor:'pointer', padding:'5px 12px', borderRadius:'2px' }}>← NEW</button>
                 <div style={{ position:'relative' }}>
-                  <button onClick={() => setShowExport(!showExport)} style={{ background:'none', border:'1px solid #7a4520', color:'#F08D34', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'3px 8px', borderRadius:'2px' }}>⬇ EXPORT ▾</button>
+                  <button onClick={() => setShowExport(!showExport)} style={{ background:'none', border:'1px solid #7a4520', color:'#F08D34', fontFamily:pf, fontSize:'9px', cursor:'pointer', padding:'5px 12px', borderRadius:'2px' }}>⬇ EXPORT ▾</button>
                   {showExport && (
                     <div style={{ position:'absolute', right:0, top:'100%', marginTop:'4px', background:'#091E2A', border:'1px solid #144B63', borderRadius:'3px', zIndex:100, minWidth:'100px', overflow:'hidden' }}>
                       {[{ label:'📄 PDF (Print)', fn:() => exportAs('pdf') }, { label:'📝 Word (.doc)', fn:() => exportAs('doc') }, { label:'🌐 HTML', fn:() => exportAs('html') }, { label:'📋 Markdown', fn:() => exportAs('md') }, { label:'🔧 JSON', fn:() => exportAs('json') }].map(opt => (
-                        <button key={opt.label} onClick={opt.fn} style={{ display:'block', width:'100%', textAlign:'left', background:'none', border:'none', borderBottom:'1px solid #0C1526', color:'#F0F4F7', fontFamily:pf, fontSize:'5px', cursor:'pointer', padding:'6px 10px' }}
+                        <button key={opt.label} onClick={opt.fn} style={{ display:'block', width:'100%', textAlign:'left', background:'none', border:'none', borderBottom:'1px solid #0C1526', color:'#F0F4F7', fontFamily:pf, fontSize:'9px', cursor:'pointer', padding:'8px 14px' }}
                           onMouseOver={e => e.target.style.background='#162240'} onMouseOut={e => e.target.style.background='none'}>
                           {opt.label}
                         </button>
@@ -286,20 +286,20 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
 
               {/* Scores */}
               {renderScores().length > 0 && (<>
-                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'12px 0 8px' }}>// SCORES</div>
+                <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'12px 0 8px' }}>// SCORES</div>
                 {renderScores().map(s => <ScoreBar key={s.label} label={s.label} value={s.value} />)}
               </>)}
 
               {/* Issues */}
               {result.issues?.length > 0 && (<>
-                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// ISSUES ({result.issues.length})</div>
+                <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// ISSUES ({result.issues.length})</div>
                 {result.issues.map((raw, i) => {
                   const issue = normaliseIssue(raw);
                   return (
-                  <div key={i} style={{ display:'flex', gap:'8px', padding:'4px 0', borderBottom:'1px solid #162240' }}>
-                    <span style={{ color: PRIORITY_COLORS[issue.priority] || '#999', fontWeight:'bold', minWidth:'45px', fontSize:'4.5px' }}>{issue.priority}</span>
-                    <span style={{ color:'#ccc', flex:1, fontSize:'4.5px' }}>{issue.issue}</span>
-                    <span style={{ color:'#666', fontSize:'4px' }}>{issue.category}</span>
+                  <div key={i} style={{ display:'flex', gap:'8px', padding:'6px 0', borderBottom:'1px solid #162240' }}>
+                    <span style={{ color: PRIORITY_COLORS[issue.priority] || '#999', fontWeight:'bold', minWidth:'45px', fontSize:'13px' }}>{issue.priority}</span>
+                    <span style={{ color:'#ccc', flex:1, fontSize:'13px' }}>{issue.issue}</span>
+                    <span style={{ color:'#666', fontSize:'16px' }}>{issue.category}</span>
                   </div>
                   );
                 })}
@@ -307,13 +307,13 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
 
               {/* Recommendations */}
               {result.recommendations?.length > 0 && (<>
-                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// RECOMMENDATIONS</div>
+                <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// RECOMMENDATIONS</div>
                 {result.recommendations.map((raw, i) => {
                   const rec = normaliseRec(raw);
                   return (
-                  <div key={i} style={{ padding:'6px 8px', marginBottom:'4px', background:'#0C1526', borderLeft:`2px solid ${PRIORITY_COLORS[rec.priority]||'#444'}`, borderRadius:'2px' }}>
-                    <div style={{ fontSize:'4.5px' }}><span style={{ color:PRIORITY_COLORS[rec.priority], fontWeight:'bold' }}>{rec.priority}</span> <span style={{ color:'#F0F4F7', fontWeight:'bold' }}>{rec.title}</span></div>
-                    {rec.description && <div style={{ color:'#999', fontSize:'4.5px', marginTop:'2px' }}>{rec.description}</div>}
+                  <div key={i} style={{ padding:'8px 12px', marginBottom:'4px', background:'#0C1526', borderLeft:`2px solid ${PRIORITY_COLORS[rec.priority]||'#444'}`, borderRadius:'2px' }}>
+                    <div style={{ fontSize:'13px' }}><span style={{ color:PRIORITY_COLORS[rec.priority], fontWeight:'bold' }}>{rec.priority}</span> <span style={{ color:'#F0F4F7', fontWeight:'bold' }}>{rec.title}</span></div>
+                    {rec.description && <div style={{ color:'#999', fontSize:'13px', marginTop:'2px' }}>{rec.description}</div>}
                   </div>
                   );
                 })}
@@ -327,11 +327,11 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
                 return Array.isArray(val) && val.length > 0;
               }).map(([key, val]) => (
                 <div key={key}>
-                  <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
+                  <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
                   {val.map((item, i) => {
                     const n = normaliseListItem(item);
                     return (
-                      <div key={i} style={{ padding:'4px 8px', marginBottom:'3px', background: i % 2 === 0 ? '#0C1526' : 'transparent', borderRadius:'2px', fontSize:'4.5px' }}>
+                      <div key={i} style={{ padding:'6px 10px', marginBottom:'3px', background: i % 2 === 0 ? '#0C1526' : 'transparent', borderRadius:'2px', fontSize:'13px' }}>
                         <span style={{ color:'#2EC4F3', fontWeight:'bold' }}>{n.label}</span>
                         {n.detail && <span style={{ color:'#999', marginLeft:'8px' }}>{n.detail}</span>}
                       </div>
@@ -349,9 +349,9 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
                 if (entries.length === 0) return null;
                 return (
                   <div key={key}>
-                    <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
+                    <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// {key.replace(/([A-Z])/g, ' $1').toUpperCase()}</div>
                     {entries.map(([k, v]) => (
-                      <div key={k} style={{ display:'flex', gap:'6px', padding:'3px 0', borderBottom:'1px solid #162240', fontSize:'4.5px' }}>
+                      <div key={k} style={{ display:'flex', gap:'6px', padding:'3px 0', borderBottom:'1px solid #162240', fontSize:'13px' }}>
                         <span style={{ color:'#2EC4F3', minWidth:'80px' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
                         <span style={{ color:'#ccc', flex:1 }}>{typeof v === 'object' ? (Array.isArray(v) ? v.join(', ') : JSON.stringify(v)) : String(v)}</span>
                       </div>
@@ -362,20 +362,20 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
 
               {/* Summary */}
               {result.summary && (<>
-                <div style={{ color:'#0047AB', fontSize:'7px', fontWeight:'bold', margin:'16px 0 8px' }}>// SUMMARY</div>
-                <div style={{ background:'#0C1526', border:'1px solid #222', borderRadius:'3px', padding:'8px', color:'#ccc', lineHeight:'2', fontSize:'5px' }}>{result.summary}</div>
+                <div style={{ color:'#0047AB', fontSize:'16px', fontWeight:'bold', margin:'16px 0 8px' }}>// SUMMARY</div>
+                <div style={{ background:'#0C1526', border:'1px solid #222', borderRadius:'3px', padding:'8px', color:'#ccc', lineHeight:'2', fontSize:'9px' }}>{result.summary}</div>
               </>)}
 
               {/* Full data viewer */}
               <details style={{ marginTop:'16px' }}>
-                <summary style={{ color:'#666', fontSize:'4.5px', cursor:'pointer' }}>View raw data</summary>
-                <div style={{ marginTop:'6px', padding:'8px', background:'#0C1526', borderRadius:'3px', fontSize:'4.5px', maxHeight:'300px', overflowY:'auto' }}>
+                <summary style={{ color:'#666', fontSize:'13px', cursor:'pointer' }}>View raw data</summary>
+                <div style={{ marginTop:'6px', padding:'8px', background:'#0C1526', borderRadius:'3px', fontSize:'13px', maxHeight:'300px', overflowY:'auto' }}>
                   <JsonViewer data={result} />
                 </div>
               </details>
 
               {/* Meta */}
-              {result._meta && <div style={{ color:'#444', fontSize:'4px', marginTop:'12px', textAlign:'right' }}>{result._meta.model} · {result._meta.inputTokens?.toLocaleString()} in / {result._meta.outputTokens?.toLocaleString()} out · {result._meta.turns} turns · {result._meta.analysedAt?.split('T')[0]}</div>}
+              {result._meta && <div style={{ color:'#444', fontSize:'16px', marginTop:'12px', textAlign:'right' }}>{result._meta.model} · {result._meta.inputTokens?.toLocaleString()} in / {result._meta.outputTokens?.toLocaleString()} out · {result._meta.turns} turns · {result._meta.analysedAt?.split('T')[0]}</div>}
             </div>
           )}
         </div>
