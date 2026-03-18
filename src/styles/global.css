@@ -646,7 +646,27 @@ body {
 }
 
 .px-monitor.mon-glow {
-  box-shadow: 0 0 6px rgba(100, 200, 100, 0.4);
+  box-shadow: 0 0 8px rgba(46, 196, 243, 0.5);
+  animation: monitor-pulse 2s ease-in-out infinite;
+}
+
+.px-monitor.mon-glow .mon-screen {
+  opacity: 1;
+}
+
+@keyframes monitor-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(46, 196, 243, 0.3); }
+  50% { box-shadow: 0 0 12px rgba(46, 196, 243, 0.7); }
+}
+
+/* Active agent station glow */
+.agent-station:has(.char-active) {
+  background: rgba(46, 196, 243, 0.04);
+  box-shadow: 0 0 15px rgba(46, 196, 243, 0.08);
+}
+
+.agent-station:has(.char-active) .px-nameplate {
+  border-color: rgba(46, 196, 243, 0.3);
 }
 
 .mon-screen {

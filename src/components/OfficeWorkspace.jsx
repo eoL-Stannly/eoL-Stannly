@@ -1,393 +1,192 @@
 import React from 'react';
 import { AGENT_STATES } from '../agents/AgentDefinitions.js';
 
-export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }) {
-  const waterCoolerAgents = agents.filter((a) => a.atWaterCooler);
+const STATE_CONFIG = {
+  [AGENT_STATES.IDLE]: { label: 'Idle', color: '#666', dot: '#444' },
+  [AGENT_STATES.WORKING]: { label: 'Working', color: '#20C997', dot: '#20C997' },
+  [AGENT_STATES.THINKING]: { label: 'Thinking', color: '#2EC4F3', dot: '#2EC4F3' },
+  [AGENT_STATES.WALKING]: { label: 'Moving', color: '#F7CC76', dot: '#F7CC76' },
+  [AGENT_STATES.COLLABORATING]: { label: 'Collaborating', color: '#9B59B6', dot: '#9B59B6' },
+  [AGENT_STATES.PRESENTING]: { label: 'Presenting', color: '#0047AB', dot: '#0047AB' },
+  [AGENT_STATES.COFFEE]: { label: 'Break', color: '#F08D34', dot: '#F08D34' },
+  [AGENT_STATES.CELEBRATING]: { label: 'Done!', color: '#F7CC76', dot: '#F7CC76' },
+};
 
-  return (
-    <div className="game-office">
-      {/* Ayima Logo Bar */}
-      <div className="ayima-logo-bar">
-        <img src="/assets/ayima-logo-white.svg" alt="Ayima" className="ayima-logo" />
-        <span className="ayima-logo-divider">|</span>
-        <span className="ayima-logo-text">AGI HQ</span>
-      </div>
-
-      {/* Top decoration shelf */}
-      <div className="office-shelf">
-        <div className="shelf-item shelf-drinks">
-          <span className="shelf-icon">&#9749;</span>
-          <span className="shelf-icon">&#127849;</span>
-        </div>
-        <div className="shelf-item shelf-window">
-          <div className="pixel-window">
-            <div className="win-pane"></div>
-            <div className="win-pane"></div>
-            <div className="win-pane"></div>
-            <div className="win-pane"></div>
-          </div>
-        </div>
-        <div className="shelf-item shelf-center">
-          <span className="shelf-icon">&#128200;</span>
-          <span className="shelf-icon">&#128336;</span>
-        </div>
-        <div className="shelf-item shelf-window">
-          <div className="pixel-window">
-            <div className="win-pane"></div>
-            <div className="win-pane"></div>
-            <div className="win-pane"></div>
-            <div className="win-pane"></div>
-          </div>
-        </div>
-        <div className="shelf-item shelf-board">
-          <span className="shelf-icon">&#128204;</span>
-          <span className="shelf-icon">&#128196;</span>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="office-title-bar">
-        <span className="sparkle-icon">&#10024;</span>
-        AGI - Ayima General Intelligence - HQ
-        <span className="sparkle-icon">&#10024;</span>
-      </div>
-
-      {/* The campus floor */}
-      <div className="office-floor">
-        <div className="office-zones">
-          {/* Row 1: Main office + Meeting Room */}
-          <div className="office-zone-row">
-            {/* Main open-plan office */}
-            <div className="zone-main">
-              <div className="zone-label">Open Plan Office</div>
-              <div style={{ position: 'relative' }}>
-                {/* Floor decorations */}
-                <div className="floor-plant" style={{ position: 'absolute', bottom: 8, right: 20, zIndex: 1 }}>&#127793;</div>
-                <div className="floor-plant" style={{ position: 'absolute', top: 8, left: 12, zIndex: 1 }}>&#127811;</div>
-
-                {/* Water Cooler Area */}
-                <div className="water-cooler-area">
-                  <div className="water-cooler">
-                    <div className="wc-bottle"></div>
-                    <div className="wc-base"></div>
-                    <div className="wc-label">&#128167;</div>
-                  </div>
-                  {waterCoolerAgents.length > 0 && (
-                    <div className="wc-agents">
-                      {waterCoolerAgents.map((agent) => (
-                        <div key={agent.id} className="wc-agent-mini">
-                          <div className="wc-mini-char">
-                            {agent.speechBubble && (
-                              <div className="speech-bubble speech-bubble-wc">
-                                {agent.speechBubble}
-                              </div>
-                            )}
-                            <div className={`ch-hair ${agent.longHair ? 'ch-hair-long' : ''}`} style={{ background: agent.hairColor }}></div>
-                            <div className="ch-head" style={{ background: agent.skinTone }}>
-                              <div className="ch-eye ch-eye-l"></div>
-                              <div className="ch-eye ch-eye-r"></div>
-                            </div>
-                            <div className="ch-body" style={{ background: agent.shirtColor }}></div>
-                          </div>
-                          <div className="wc-name">{agent.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Agent grid */}
-                <div className="agent-grid">
-                  {agents.map((agent) => (
-                    <AgentStation
-                      key={agent.id}
-                      agent={agent}
-                      isSelected={selectedAgent === agent.id}
-                      onClick={() => onSelectAgent(agent.id === selectedAgent ? null : agent.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Meeting Rooms */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="zone-meeting">
-                <div className="zone-label">Meeting Room A</div>
-                <div className="meeting-table">
-                  <div className="meeting-screen">
-                    <div className="meeting-screen-glow"></div>
-                  </div>
-                  <div className="meeting-surface"></div>
-                  <div className="meeting-chairs">
-                    <div className="meeting-chair"></div>
-                    <div className="meeting-chair"></div>
-                    <div className="meeting-chair"></div>
-                    <div className="meeting-chair"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="zone-meeting">
-                <div className="zone-label">Meeting Room B</div>
-                <div className="meeting-table">
-                  <div className="meeting-screen">
-                    <div className="meeting-screen-glow"></div>
-                  </div>
-                  <div className="meeting-surface"></div>
-                  <div className="meeting-chairs">
-                    <div className="meeting-chair"></div>
-                    <div className="meeting-chair"></div>
-                    <div className="meeting-chair"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Row 2: Breakout Area (square, larger) */}
-          <div className="office-zone-row">
-            <div className="zone-breakout zone-breakout-square">
-              <div className="zone-label">Breakout Area</div>
-              <div className="breakout-grid">
-                <div className="breakout-section">
-                  <div className="breakout-couch"></div>
-                  <div className="breakout-table"></div>
-                  <div className="breakout-couch"></div>
-                </div>
-                <div className="breakout-section">
-                  <div className="breakout-station">
-                    <span className="breakout-emoji-lg">&#9749;</span>
-                    <span className="breakout-station-label">COFFEE BAR</span>
-                  </div>
-                  <div className="breakout-station">
-                    <span className="breakout-emoji-lg">&#127918;</span>
-                    <span className="breakout-station-label">GAMES</span>
-                  </div>
-                  <div className="breakout-station">
-                    <span className="breakout-emoji-lg">&#128250;</span>
-                    <span className="breakout-station-label">TV</span>
-                  </div>
-                </div>
-                <div className="breakout-section">
-                  <div className="breakout-couch"></div>
-                  <div className="breakout-beanbag"></div>
-                  <div className="breakout-beanbag"></div>
-                  <div className="breakout-couch"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Row 3: Garden (full width, bottom) */}
-          <div className="zone-garden">
-            <div className="zone-label" style={{ color: '#2E7D32', background: 'rgba(46,125,50,0.12)' }}>Outside Garden</div>
-            <div className="garden-path"></div>
-            <div className="garden-items">
-              <div className="garden-item">
-                <span className="garden-emoji">&#127794;</span>
-              </div>
-              <div className="garden-item">
-                <span className="garden-emoji-sm">&#127800;</span>
-                <span className="garden-emoji-sm">&#127799;</span>
-              </div>
-              <div className="garden-item">
-                <div className="garden-bench"></div>
-              </div>
-              <div className="garden-item">
-                <span className="garden-emoji-sm">&#127807;</span>
-                <span className="garden-emoji">&#127795;</span>
-              </div>
-              <div className="garden-item">
-                <span className="garden-emoji">&#127793;</span>
-              </div>
-              <div className="garden-item">
-                <span className="garden-emoji-sm">&#127804;</span>
-                <span className="garden-emoji-sm">&#127803;</span>
-              </div>
-              <div className="garden-item">
-                <div className="garden-bench"></div>
-              </div>
-              <div className="garden-item">
-                <span className="garden-emoji-sm">&#127811;</span>
-                <span className="garden-emoji">&#127796;</span>
-              </div>
-              <div className="garden-item">
-                <span className="garden-emoji-sm">&#127800;</span>
-                <span className="garden-emoji-sm">&#127801;</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AgentStation({ agent, isSelected, onClick }) {
+function AgentCard({ agent, isSelected, onClick }) {
   const isActive = agent.state !== AGENT_STATES.IDLE;
   const isWorking = agent.state === AGENT_STATES.WORKING || agent.state === AGENT_STATES.THINKING;
-  const isWalking = agent.state === AGENT_STATES.WALKING;
   const isCelebrating = agent.state === AGENT_STATES.CELEBRATING;
-  const isCoffee = agent.state === AGENT_STATES.COFFEE;
-  const isCollab = agent.state === AGENT_STATES.COLLABORATING || agent.state === AGENT_STATES.PRESENTING;
-  const isAtCooler = agent.atWaterCooler;
+  const cfg = STATE_CONFIG[agent.state] || STATE_CONFIG[AGENT_STATES.IDLE];
+
+  const initials = agent.name.charAt(0).toUpperCase();
 
   return (
-    <div className={`agent-station ${isSelected ? 'station-selected' : ''} ${isAtCooler ? 'station-at-cooler' : ''}`} onClick={onClick}>
-      {/* Speech Bubble */}
-      {agent.speechBubble && !isAtCooler && (
-        <div className="speech-bubble">
-          {agent.speechBubble}
-          <div className="speech-tail"></div>
-        </div>
+    <div
+      onClick={onClick}
+      style={{
+        background: isActive ? 'rgba(46, 196, 243, 0.04)' : '#0C1526',
+        border: `1px solid ${isSelected ? '#2EC4F3' : isActive ? `${cfg.color}33` : '#1A2A3A'}`,
+        borderRadius: '6px',
+        padding: '10px 12px',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Active pulse background */}
+      {isWorking && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: `linear-gradient(135deg, ${cfg.color}08 0%, transparent 60%)`,
+          animation: 'cardPulse 3s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
       )}
 
-      {/* Character */}
-      <div className={`pixel-char ${isActive ? 'char-active' : ''} ${isWalking ? 'char-walk' : ''} ${isAtCooler ? 'char-away' : ''}`}>
-        {/* Thinking / celebration effects */}
-        {agent.state === AGENT_STATES.THINKING && (
-          <div className="think-effect">&#128161;</div>
+      {/* Top row: Avatar + Name + Status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative', zIndex: 1 }}>
+        {/* Avatar circle */}
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          background: agent.shirtColor,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: isActive ? `2px solid ${cfg.color}` : '2px solid transparent',
+          transition: 'border-color 0.3s',
+          flexShrink: 0,
+        }}>
+          <span style={{ color: '#fff', fontFamily: '"Press Start 2P", monospace', fontSize: '11px', fontWeight: 'bold' }}>{initials}</span>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ color: '#FAF9F5', fontFamily: '"Press Start 2P", monospace', fontSize: '8px' }}>{agent.name}</span>
+            {/* Status dot */}
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%', background: cfg.dot, flexShrink: 0,
+              animation: isActive ? 'dotPulse 1.5s ease-in-out infinite' : 'none',
+            }} />
+          </div>
+          <div style={{ color: '#999', fontFamily: '"Press Start 2P", monospace', fontSize: '5px' }}>{agent.title}</div>
+        </div>
+
+        {/* Task count badge */}
+        {agent.completedTasks > 0 && (
+          <div style={{
+            background: '#F7CC76', color: '#1a1a1a',
+            fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
+            width: 20, height: 20, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 'bold', flexShrink: 0,
+          }}>{agent.completedTasks}</div>
         )}
-        {isCelebrating && (
-          <div className="celebrate-fx">
-            <span className="conf c0">&#10024;</span>
-            <span className="conf c1">&#127881;</span>
-            <span className="conf c2">&#10024;</span>
+      </div>
+
+      {/* Status line */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', position: 'relative', zIndex: 1 }}>
+        <span style={{
+          fontFamily: '"Press Start 2P", monospace', fontSize: '5px',
+          color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.5px',
+        }}>{cfg.label}</span>
+
+        {/* Progress bar when working */}
+        {isWorking && (
+          <div style={{ flex: 1, height: 3, background: '#162240', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', background: cfg.color, borderRadius: '2px',
+              animation: 'progressPulse 2.5s ease-in-out infinite',
+            }} />
           </div>
         )}
-        {isCoffee && (
-          <div className="coffee-fx">&#9749;</div>
+
+        {/* Celebration sparkles */}
+        {isCelebrating && (
+          <span style={{ fontSize: '10px', animation: 'celebSpin 0.6s ease-in-out infinite' }}>&#10024;</span>
         )}
-
-        {/* Hair */}
-        <div className={`ch-hair ${agent.longHair ? 'ch-hair-long' : ''}`} style={{ background: agent.hairColor }}></div>
-        {/* Head */}
-        <div className="ch-head" style={{ background: agent.skinTone }}>
-          <div className="ch-eye ch-eye-l"></div>
-          <div className="ch-eye ch-eye-r"></div>
-        </div>
-        {/* Long hair sides */}
-        {agent.longHair && (
-          <>
-            <div className="ch-hair-side ch-hair-side-l" style={{ background: agent.hairColor }}></div>
-            <div className="ch-hair-side ch-hair-side-r" style={{ background: agent.hairColor }}></div>
-          </>
-        )}
-        {/* Body */}
-        <div className="ch-body" style={{ background: agent.shirtColor }}></div>
-        {/* Legs */}
-        <div className="ch-legs">
-          <div className={`ch-leg ch-leg-l ${isWalking ? 'walk-l' : ''}`}></div>
-          <div className={`ch-leg ch-leg-r ${isWalking ? 'walk-r' : ''}`}></div>
-        </div>
       </div>
 
-      {/* Status label */}
-      <div className={`state-tag ${isWorking ? 'tag-working' : ''} ${isCelebrating ? 'tag-done' : ''} ${isCollab ? 'tag-collab' : ''} ${isCoffee ? 'tag-coffee' : ''}`}>
-        {getLabel(agent.state, isAtCooler)}
-      </div>
-
-      {/* Desk */}
-      <div className="px-desk">
-        <div className="desk-top-surface">
-          <DeskItems role={agent.role} state={agent.state} />
+      {/* Speech bubble */}
+      {agent.speechBubble && (
+        <div style={{
+          marginTop: '8px', padding: '5px 8px',
+          background: '#162240', borderRadius: '4px',
+          border: `1px solid ${cfg.color}22`,
+          fontFamily: '"Press Start 2P", monospace', fontSize: '4.5px',
+          color: '#ccc', lineHeight: '1.6',
+          position: 'relative', zIndex: 1,
+        }}>
+          <span style={{ color: cfg.color, marginRight: '4px' }}>{'>'}</span>
+          {agent.speechBubble}
         </div>
-        <div className="desk-front-face"></div>
-      </div>
-
-      {/* Nameplate */}
-      <div className="px-nameplate">{agent.name}</div>
-      <div className="px-title">{agent.title}</div>
-
-      {/* Task badge */}
-      {agent.completedTasks > 0 && (
-        <div className="px-badge">{agent.completedTasks}</div>
       )}
     </div>
   );
 }
 
-function DeskItems({ role, state }) {
-  const isWorking = state === AGENT_STATES.WORKING || state === AGENT_STATES.THINKING;
-
-  if (role === 'data_engineer') {
-    return (
-      <>
-        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
-          <div className="mon-screen mon-code">
-            <div className="code-ln c1"></div>
-            <div className="code-ln c2"></div>
-            <div className="code-ln c3"></div>
-          </div>
-        </div>
-        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
-          <div className="mon-screen mon-data">
-            <div className="data-br d1"></div>
-            <div className="data-br d2"></div>
-            <div className="data-br d3"></div>
-            <div className="data-br d4"></div>
-          </div>
-        </div>
-        <div className="desk-obj">&#127911;</div>
-      </>
-    );
-  }
-
-  if (role === 'coo' || role === 'account_manager') {
-    return (
-      <>
-        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
-          <div className="mon-screen mon-chart">
-            <div className="chart-line"></div>
-          </div>
-        </div>
-        <div className="desk-obj desk-clipboard">
-          <div className="clip-check">&#10003;</div>
-          <div className="clip-check">&#10003;</div>
-        </div>
-      </>
-    );
-  }
-
-  if (role === 'principal_seo' || role === 'head_of_seo') {
-    return (
-      <>
-        <div className="desk-obj">&#128269;</div>
-        <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
-          <div className="mon-screen mon-serp">
-            <div className="serp-ln s1"></div>
-            <div className="serp-ln s2"></div>
-            <div className="serp-ln s3"></div>
-          </div>
-        </div>
-        <div className="desk-obj">&#128202;</div>
-      </>
-    );
-  }
+export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }) {
+  const activeCount = agents.filter(a => a.state !== AGENT_STATES.IDLE).length;
+  const totalTasks = agents.reduce((sum, a) => sum + a.completedTasks, 0);
 
   return (
-    <>
-      <div className={`px-monitor ${isWorking ? 'mon-glow' : ''}`}>
-        <div className="mon-screen mon-kw">
-          <div className="kw-block k1"></div>
-          <div className="kw-block k2"></div>
+    <div className="game-office" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 16px 12px',
+        borderBottom: '1px solid #144B63',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/assets/ayima-logo.png" alt="Ayima" style={{ height: 22, opacity: 0.9 }} />
+          <span style={{ color: '#444', fontSize: '10px' }}>|</span>
+          <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '8px', color: '#2EC4F3', letterSpacing: '1px' }}>AGI HQ</span>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', fontFamily: '"Press Start 2P", monospace', fontSize: '5px' }}>
+          <span style={{ color: activeCount > 0 ? '#20C997' : '#666' }}>
+            {activeCount > 0 ? `${activeCount} ACTIVE` : 'ALL IDLE'}
+          </span>
+          {totalTasks > 0 && <span style={{ color: '#F7CC76' }}>{totalTasks} DONE</span>}
         </div>
       </div>
-      <div className="desk-obj">&#128214;</div>
-    </>
-  );
-}
 
-function getLabel(state, atCooler) {
-  if (atCooler) return 'water cooler';
-  switch (state) {
-    case AGENT_STATES.WORKING: return 'working...';
-    case AGENT_STATES.THINKING: return 'thinking...';
-    case AGENT_STATES.WALKING: return 'walking';
-    case AGENT_STATES.COLLABORATING: return 'chatting';
-    case AGENT_STATES.PRESENTING: return 'presenting';
-    case AGENT_STATES.COFFEE: return 'coffee break';
-    case AGENT_STATES.CELEBRATING: return 'done!';
-    default: return 'idle';
-  }
+      {/* Agent Grid */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '12px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        gap: '8px',
+        alignContent: 'start',
+      }}>
+        {agents.map(agent => (
+          <AgentCard
+            key={agent.id}
+            agent={agent}
+            isSelected={selectedAgent === agent.id}
+            onClick={() => onSelectAgent(agent.id === selectedAgent ? null : agent.id)}
+          />
+        ))}
+      </div>
+
+      {/* Animations */}
+      <style>{`
+        @keyframes dotPulse {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.4); }
+        }
+        @keyframes cardPulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+        @keyframes progressPulse {
+          0% { width: 15%; }
+          50% { width: 75%; }
+          100% { width: 15%; }
+        }
+        @keyframes celebSpin {
+          0% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.3) rotate(180deg); }
+          100% { transform: scale(1) rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
 }
