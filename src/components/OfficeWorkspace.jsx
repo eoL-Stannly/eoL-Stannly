@@ -25,7 +25,7 @@ const AGENT_PFPS = {
   kevin: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Kevin&size=200&backgroundColor=9b59b6',
   julie: '/assets/avatars/julie.png',
   peter: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Peter&size=200&backgroundColor=3498db',
-  katie: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Katie&size=200&backgroundColor=2ecc71',
+  katie: '/assets/avatars/katie.png',
 };
 
 const AGENT_COLORS = {
