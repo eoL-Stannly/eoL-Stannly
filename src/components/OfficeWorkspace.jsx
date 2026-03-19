@@ -23,7 +23,7 @@ const AGENT_PFPS = {
   ken: '/assets/avatars/ken.png',
   mark: '/assets/avatars/mark.png',
   kevin: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Kevin&size=200&backgroundColor=9b59b6',
-  julie: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Julie&size=200&backgroundColor=e91e63',
+  julie: '/assets/avatars/julie.png',
   peter: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Peter&size=200&backgroundColor=3498db',
   katie: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Katie&size=200&backgroundColor=2ecc71',
 };
