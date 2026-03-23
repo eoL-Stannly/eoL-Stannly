@@ -137,10 +137,9 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
       }
 
       try {
-        const res = await fetch('/api/seo-tool', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command: tool.command, url: testUrl }),
+        const { backendFetch } = await import('../backendConfig.js');
+        const res = await backendFetch('/api/seo/technical', {
+          body: { url: testUrl },
         });
         const data = await res.json();
 

@@ -152,10 +152,9 @@ export default function PageContentAuditModal({ onClose, onAgentState, onAgentSp
     const allTimers = [...progressTimers, ...agentTimers];
 
     try {
-      const res = await fetch('/api/content-audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: testUrl }),
+      const { backendFetch } = await import('../backendConfig.js');
+      const res = await backendFetch('/api/seo/content-audit', {
+        body: { url: testUrl },
       });
       const data = await res.json();
       allTimers.forEach(clearTimeout);

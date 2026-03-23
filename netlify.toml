@@ -7,15 +7,6 @@
   external_node_modules = []
   node_bundler = "esbuild"
 
-[functions."content-audit"]
-  timeout = 120
-
-[functions."seo-tool"]
-  timeout = 120
-
-[functions."aya"]
-  timeout = 60
-
 [dev]
   command = "npm run dev:client"
   port = 3000

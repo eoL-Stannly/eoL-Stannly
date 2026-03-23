@@ -41,10 +41,9 @@ export default function AyaChat({ onClose }) {
       }
 
       try {
-        const res = await fetch('/api/aya', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q, context }),
+        const { backendFetch } = await import('../backendConfig.js');
+        const res = await backendFetch('/api/aya/chat', {
+          body: { message: q, history: messages.slice(-20).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text })) },
         });
         const data = await res.json();
 
@@ -59,7 +58,7 @@ export default function AyaChat({ onClose }) {
         if (data.error) {
           setMessages(prev => [...prev, { role: 'aya', text: `Error: ${data.error}`, time: new Date(), error: true }]);
         } else {
-          setMessages(prev => [...prev, { role: 'aya', text: data.answer, time: new Date(), meta: data._meta }]);
+          setMessages(prev => [...prev, { role: 'aya', text: data.reply || data.answer, time: new Date(), meta: data._meta || data.usage }]);
         }
         break;
       } catch (e) {
