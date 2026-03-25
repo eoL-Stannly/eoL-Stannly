@@ -10,18 +10,18 @@ import { AGENTS, AGENT_STATES } from './agents/AgentDefinitions.js';
 import { generateClientDeliverable, pickAgentForTask } from './clientDeliverables.js';
 
 const SEO_TASK_BUTTONS = [
-  { label: 'General Audit', icon: '🔍', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob' },
-  { label: 'Page Analysis', icon: '📄', desc: 'Deep single-page analysis', command: 'page', agent: 'ewan' },
-  { label: 'Technical SEO', icon: '⚙️', desc: 'Technical SEO (crawlability, indexability, CWV)', command: 'technical', agent: 'rob' },
-  { label: 'Content Audit', icon: '✍️', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan' },
-  { label: 'Schema Markup', icon: '🧩', desc: 'Schema markup detection & generation', command: 'schema', agent: 'leo' },
-  { label: 'Image SEO', icon: '🖼️', desc: 'Image optimization analysis', command: 'images', agent: 'craig' },
-  { label: 'Sitemap', icon: '🗺️', desc: 'Sitemap analysis or generation', command: 'sitemap', agent: 'alex' },
-  { label: 'GEO / AI Search', icon: '🤖', desc: 'AI Overviews / GEO optimization', command: 'geo', agent: 'leo' },
-  { label: 'SEO Plan', icon: '📋', desc: 'Strategic SEO planning', command: 'plan', agent: 'ewan' },
-  { label: 'Programmatic', icon: '🔁', desc: 'Programmatic SEO analysis', command: 'programmatic', agent: 'alex' },
-  { label: 'Competitors', icon: '⚔️', desc: 'Competitor comparison pages', command: 'competitor-pages', agent: 'craig' },
-  { label: 'Hreflang', icon: '🌐', desc: 'Hreflang/i18n audit', command: 'hreflang', agent: 'ken' },
+  { label: 'General Audit', icon: '🔍', desc: 'Full website audit with parallel analysis', command: 'audit', agent: 'rob', scope: 'domain' },
+  { label: 'Page Analysis', icon: '📄', desc: 'Deep single-page analysis', command: 'page', agent: 'ewan', scope: 'page' },
+  { label: 'Technical SEO', icon: '⚙️', desc: 'Technical SEO (crawlability, indexability, CWV)', command: 'technical', agent: 'rob', scope: 'domain' },
+  { label: 'Content Audit', icon: '✍️', desc: 'E-E-A-T and content quality', command: 'content', agent: 'ewan', scope: 'page' },
+  { label: 'Schema Markup', icon: '🧩', desc: 'Schema markup detection & generation', command: 'schema', agent: 'leo', scope: 'page' },
+  { label: 'Image SEO', icon: '🖼️', desc: 'Image optimization analysis', command: 'images', agent: 'craig', scope: 'page' },
+  { label: 'Sitemap', icon: '🗺️', desc: 'Sitemap analysis or generation', command: 'sitemap', agent: 'alex', scope: 'domain' },
+  { label: 'GEO / AI Search', icon: '🤖', desc: 'AI Overviews / GEO optimization', command: 'geo', agent: 'leo', scope: 'page' },
+  { label: 'SEO Plan', icon: '📋', desc: 'Strategic SEO planning', command: 'plan', agent: 'ewan', scope: 'domain' },
+  { label: 'Programmatic', icon: '🔁', desc: 'Programmatic SEO analysis', command: 'programmatic', agent: 'alex', scope: 'domain' },
+  { label: 'Competitors', icon: '⚔️', desc: 'Competitor comparison pages', command: 'competitor-pages', agent: 'craig', scope: 'domain' },
+  { label: 'Hreflang', icon: '🌐', desc: 'Hreflang/i18n audit', command: 'hreflang', agent: 'ken', scope: 'domain' },
 ];
 
 const IDLE_CHATTER = [

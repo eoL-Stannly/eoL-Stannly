@@ -98,9 +98,14 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
 
   const runTool = async () => {
     let testUrl = url.trim();
-    if (!testUrl) { setError('Enter a URL'); return; }
+    if (!testUrl) { setError(tool.scope === 'domain' ? 'Enter a domain' : 'Enter a URL'); return; }
     if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) testUrl = 'https://' + testUrl;
     try { new URL(testUrl); } catch { setError('Invalid URL format'); return; }
+
+    // For domain-scoped tools, strip to root
+    if (tool.scope === 'domain') {
+      try { const u = new URL(testUrl); testUrl = u.origin; } catch {}
+    }
 
     setError(''); setLoading(true); setResult(null); setProgress('Initialising...');
 
@@ -272,13 +277,14 @@ export default function SeoToolModal({ tool, onClose, onComplete, onAgentState, 
             <div style={{ fontSize:'9px', color:'#999', lineHeight:'1.8', marginBottom:'14px' }}>
               {tool.desc}<br/>Powered by Claude AI · Agent: {agentName}
             </div>
-            <label style={{ fontSize:'9px', color:'#2EC4F3', display:'block', marginBottom:'6px' }}>TARGET URL</label>
+            <label style={{ fontSize:'9px', color:'#2EC4F3', display:'block', marginBottom:'6px' }}>{tool.scope === 'domain' ? 'TARGET DOMAIN' : 'TARGET URL'}</label>
             <div style={{ display:'flex', alignItems:'center', background:'#0A1E2A', border:'1.6px solid #1A4B63', borderRadius:'3px', padding:'2px' }}>
               <span style={{ fontSize:'10px', color:'#2EC4F3', padding:'4px 6px', opacity:0.6 }}>{'>'}</span>
               <input ref={inputRef} style={{ flex:1, background:'transparent', border:'none', outline:'none', color:'#F0F4F7', fontFamily:pf, fontSize:'10px', padding:'6px 4px' }}
                 type="text" value={url} onChange={(e) => { setUrl(e.target.value); setError(''); }} onKeyDown={handleKeyDown}
-                placeholder="https://example.com/page" disabled={loading} />
+                placeholder={tool.scope === 'domain' ? 'https://example.com' : 'https://example.com/page'} disabled={loading} />
             </div>
+            {tool.scope === 'domain' && <div style={{ fontSize:'7px', color:'#666', marginTop:'4px' }}>🌐 This tool analyses the whole domain, not just a single page</div>}
             {error && <div style={{ fontSize:'9px', color:'#D34F2D', marginTop:'8px' }}>⚠ {error}</div>}
             {loading ? (
               <div style={{ fontSize:'9px', color:'#2EC4F3', textAlign:'center', padding:'24px 0' }}>
