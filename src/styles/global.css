@@ -2885,7 +2885,7 @@ body {
   gap: 10px;
   padding: 12px;
   background: linear-gradient(135deg, rgba(247, 204, 118, 0.06), rgba(240, 141, 52, 0.06));
-  border: 1.5px solid rgba(247, 204, 118, 0.3);
+  border: 1.5px solid rgba(247, 204, 118, 0.15);
   border-radius: 8px;
   color: #F7CC76;
   font-family: var(--pixel-font);
@@ -2893,20 +2893,60 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   letter-spacing: 1px;
-  animation: aaaGlow 4s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
 }
 
-@keyframes aaaGlow {
-  0%, 100% { box-shadow: 0 0 4px rgba(247, 204, 118, 0.1); border-color: rgba(247, 204, 118, 0.3); }
-  50% { box-shadow: 0 0 18px rgba(247, 204, 118, 0.35), 0 0 40px rgba(247, 204, 118, 0.1); border-color: rgba(247, 204, 118, 0.7); }
+/* Travelling sun-ray glow around the box */
+.aaa-button::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border-radius: 10px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 60%,
+    rgba(247, 204, 118, 0.7) 75%,
+    rgba(255, 220, 100, 1) 80%,
+    rgba(247, 204, 118, 0.7) 85%,
+    transparent 100%
+  );
+  animation: aaaSunRay 3.5s linear infinite;
+  z-index: -2;
+}
+
+.aaa-button::after {
+  content: '';
+  position: absolute;
+  top: 1.5px; left: 1.5px; right: 1.5px; bottom: 1.5px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #091E2A, #0A1628);
+  z-index: -1;
+}
+
+@keyframes aaaSunRay {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .aaa-button:hover {
-  background: linear-gradient(135deg, rgba(247, 204, 118, 0.15), rgba(240, 141, 52, 0.15));
-  border-color: #F7CC76;
-  box-shadow: 0 0 20px rgba(247, 204, 118, 0.3);
+  border-color: transparent;
   transform: translateY(-1px);
-  animation: none;
+}
+
+.aaa-button:hover::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(247, 204, 118, 0.8) 60%,
+    rgba(255, 220, 100, 1) 70%,
+    rgba(247, 204, 118, 0.8) 80%,
+    transparent 100%
+  );
+  animation-duration: 2s;
 }
 
 .aaa-button:active {
