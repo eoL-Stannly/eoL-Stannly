@@ -581,13 +581,6 @@ export default function App() {
       </div>
 
       <div className="game-right">
-        <div className="right-controls">
-          <div className="right-header-brand">
-            <img src="/assets/ayima-logo.png" alt="Ayima" className="right-header-logo" />
-            <span className="right-header-divider">·</span>
-            <span className="right-header-label">SEO TOOLKIT</span>
-          </div>
-        </div>
 
         {/* AAA - Ask Ayima Anything — above the toolkit */}
         <div style={{ padding: '8px 16px', borderBottom: '2px solid var(--panel-border)' }}>

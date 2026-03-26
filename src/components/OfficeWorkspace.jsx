@@ -80,14 +80,14 @@ function AgentCard({ agent, isSelected, onClick }) {
   return (
     <div onClick={onClick} style={{
       background: isActive ? cfg.bg : '#0C1526',
-      border: `2px solid ${isSelected ? '#2EC4F3' : isActive ? `${cfg.color}44` : '#1A2A3A'}`,
-      borderRadius: '16px',
-      padding: '28px',
+      border: `1.5px solid ${isSelected ? '#2EC4F3' : isActive ? `${cfg.color}44` : '#1A2A3A'}`,
+      borderRadius: '10px',
+      padding: '12px',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
       position: 'relative',
       overflow: 'hidden',
-      height: '380px',
+      height: '170px',
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -98,31 +98,31 @@ function AgentCard({ agent, isSelected, onClick }) {
       }} />}
 
       {/* Avatar + Info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative', zIndex: 1 }}>
         <AvatarImg
           agentId={agent.id}
           name={agent.name}
-          size={140}
+          size={56}
           borderColor={isActive ? cfg.color : '#1A2A3A'}
           isActive={isActive}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <span style={{ color: '#FAF9F5', fontFamily: '"Press Start 2P", monospace', fontSize: '20px' }}>{agent.name}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+            <span style={{ color: '#FAF9F5', fontFamily: '"Press Start 2P", monospace', fontSize: '10px' }}>{agent.name}</span>
             <span style={{
-              width: 14, height: 14, borderRadius: '50%', background: cfg.color, flexShrink: 0,
+              width: 8, height: 8, borderRadius: '50%', background: cfg.color, flexShrink: 0,
               animation: isActive ? 'dotPulse 1.5s ease-in-out infinite' : 'none',
-              boxShadow: isActive ? `0 0 10px ${cfg.color}` : 'none',
+              boxShadow: isActive ? `0 0 6px ${cfg.color}` : 'none',
             }} />
-            {isCelebrating && <span style={{ fontSize: '24px', animation: 'celebBounce 0.5s ease-in-out infinite alternate' }}>&#10024;</span>}
+            {isCelebrating && <span style={{ fontSize: '12px', animation: 'celebBounce 0.5s ease-in-out infinite alternate' }}>&#10024;</span>}
           </div>
-          <div style={{ color: '#888', fontFamily: '"Press Start 2P", monospace', fontSize: '12px', lineHeight: '1.5' }}>{agent.title}</div>
+          <div style={{ color: '#888', fontFamily: '"Press Start 2P", monospace', fontSize: '7px', lineHeight: '1.4' }}>{agent.title}</div>
           {agent.completedTasks > 0 && (
             <div style={{
-              marginTop: '12px', display: 'inline-flex', alignItems: 'center',
-              background: 'rgba(247,204,118,0.15)', padding: '5px 12px', borderRadius: '6px',
+              marginTop: '4px', display: 'inline-flex', alignItems: 'center',
+              background: 'rgba(247,204,118,0.15)', padding: '2px 6px', borderRadius: '4px',
             }}>
-              <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '11px', color: '#F7CC76' }}>
+              <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '7px', color: '#F7CC76' }}>
                 {agent.completedTasks} task{agent.completedTasks !== 1 ? 's' : ''}
               </span>
             </div>
@@ -131,30 +131,30 @@ function AgentCard({ agent, isSelected, onClick }) {
       </div>
 
       {/* Status bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '24px', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', position: 'relative', zIndex: 1 }}>
         <span style={{
-          fontFamily: '"Press Start 2P", monospace', fontSize: '13px',
+          fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
           color: cfg.color, textTransform: 'uppercase', letterSpacing: '1px',
-          minWidth: '100px',
+          minWidth: '50px',
         }}>{cfg.label}</span>
-        <div style={{ flex: 1, height: 8, background: '#162240', borderRadius: '4px', overflow: 'hidden' }}>
+        <div style={{ flex: 1, height: 4, background: '#162240', borderRadius: '2px', overflow: 'hidden' }}>
           {isWorking ? (
-            <div style={{ height: '100%', background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)`, borderRadius: '4px', animation: 'progressSlide 2.5s ease-in-out infinite' }} />
+            <div style={{ height: '100%', background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)`, borderRadius: '2px', animation: 'progressSlide 2.5s ease-in-out infinite' }} />
           ) : null}
         </div>
       </div>
 
       {/* Speech area - fixed at bottom */}
-      <div style={{ marginTop: 'auto', height: '60px', position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start' }}>
+      <div style={{ marginTop: 'auto', height: '30px', position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start' }}>
         {agent.speechBubble && (
           <div style={{
-            width: '100%', padding: '12px 16px', background: '#0A1628', borderRadius: '8px',
+            width: '100%', padding: '5px 8px', background: '#0A1628', borderRadius: '4px',
             border: `1px solid ${cfg.color}22`,
-            fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
-            color: '#ccc', lineHeight: '1.6',
+            fontFamily: '"Press Start 2P", monospace', fontSize: '6px',
+            color: '#ccc', lineHeight: '1.4',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            <span style={{ color: cfg.color, marginRight: '8px' }}>{'>'}</span>
+            <span style={{ color: cfg.color, marginRight: '4px' }}>{'>'}</span>
             {agent.speechBubble}
           </div>
         )}
@@ -170,21 +170,21 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
   return (
     <div className="game-office" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#070D18' }}>
       <div style={{
-        padding: '20px 28px', borderBottom: '2px solid #144B63',
+        padding: '10px 16px', borderBottom: '1px solid #144B63',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: '#0A1120', flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <img src="/assets/ayima-logo.png" alt="Ayima" style={{ height: 36 }} />
-          <span style={{ color: '#333', fontSize: '20px', fontWeight: 300 }}>|</span>
-          <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '16px', color: '#2EC4F3', letterSpacing: '3px' }}>AGI HQ</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img src="/assets/ayima-logo.png" alt="Ayima" style={{ height: 22 }} />
+          <span style={{ color: '#333', fontSize: '14px', fontWeight: 300 }}>|</span>
+          <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#2EC4F3', letterSpacing: '2px' }}>AGI HQ</span>
         </div>
-        <div style={{ display: 'flex', gap: '20px', fontFamily: '"Press Start 2P", monospace', fontSize: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', fontFamily: '"Press Start 2P", monospace', fontSize: '8px', alignItems: 'center' }}>
           <span style={{ color: activeCount > 0 ? '#20C997' : '#555' }}>
             {activeCount > 0 ? `${activeCount} ACTIVE` : 'ALL IDLE'}
           </span>
           {totalTasks > 0 && (
-            <span style={{ color: '#F7CC76', background: 'rgba(247,204,118,0.1)', padding: '6px 14px', borderRadius: '6px' }}>
+            <span style={{ color: '#F7CC76', background: 'rgba(247,204,118,0.1)', padding: '3px 8px', borderRadius: '4px' }}>
               {totalTasks} COMPLETED
             </span>
           )}
@@ -192,10 +192,10 @@ export default function OfficeWorkspace({ agents, selectedAgent, onSelectAgent }
       </div>
 
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '24px',
+        flex: 1, overflowY: 'auto', padding: '12px',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))',
-        gap: '18px',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: '10px',
         alignContent: 'start',
       }}>
         {(() => {
