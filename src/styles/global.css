@@ -2877,7 +2877,7 @@ body {
 }
 
 /* ---- AYA Button ---- */
-.aya-button {
+.aaa-button {
   width: 100%;
   display: flex;
   align-items: center;
@@ -2895,14 +2895,14 @@ body {
   letter-spacing: 1px;
 }
 
-.aya-button:hover {
+.aaa-button:hover {
   background: linear-gradient(135deg, rgba(46, 196, 243, 0.15), rgba(32, 201, 151, 0.15));
   border-color: #2EC4F3;
   box-shadow: 0 0 12px rgba(46, 196, 243, 0.15);
   transform: translateY(-1px);
 }
 
-.aya-button:active {
+.aaa-button:active {
   transform: translateY(0);
 }
 

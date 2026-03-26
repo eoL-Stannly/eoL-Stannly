@@ -99,7 +99,7 @@ export default function App() {
   const [serverConnected, setServerConnected] = useState(false);
   const [configTask, setConfigTask] = useState(null);
   const [activeSeoTool, setActiveSeoTool] = useState(null);
-  const [showAya, setShowAya] = useState(false);
+  const [showAAA, setShowAAA] = useState(false);
   const [auditHistory, setAuditHistory] = useState([]);
   const loopRef = useRef(null);
   const uptimeRef = useRef(null);
@@ -589,6 +589,17 @@ export default function App() {
           </div>
         </div>
 
+        {/* AAA - Ask Ayima Anything — above the toolkit */}
+        <div style={{ padding: '8px 16px', borderBottom: '2px solid var(--panel-border)' }}>
+          <button
+            onClick={() => setShowAAA(true)}
+            className="aaa-button"
+          >
+            <span style={{ fontSize: '16px' }}>💬</span>
+            <span>AAA — Ask Ayima Anything</span>
+          </button>
+        </div>
+
         {/* SEO Tool Quick Actions */}
         <div className="seo-task-buttons">
           {SEO_TASK_BUTTONS.map((btn) => (
@@ -606,16 +617,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* AYA - Ask Ayima Anything */}
-        <div style={{ padding: '8px 16px', borderBottom: '2px solid var(--panel-border)' }}>
-          <button
-            onClick={() => setShowAya(true)}
-            className="aya-button"
-          >
-            <span style={{ fontSize: '16px' }}>💬</span>
-            <span>AYA — Ask Ayima Anything</span>
-          </button>
-        </div>
 
         <div className="right-tabs">
           <button className={`tab-btn ${showPanel === 'reports' || showPanel === 'tasks' ? 'tab-active' : ''}`} onClick={() => setShowPanel('reports')}>
@@ -674,7 +675,7 @@ export default function App() {
         />
       )}
 
-      {showAya && <AyaChat onClose={() => setShowAya(false)} />}
+      {showAAA && <AyaChat onClose={() => setShowAAA(false)} />}
     </div>
   );
 }

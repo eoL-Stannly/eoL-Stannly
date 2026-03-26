@@ -65,7 +65,7 @@ export default function AyaChat({ onClose }) {
         // Network error (timeout, crash) — retry
         console.error(`AYA attempt ${attempt + 1} failed:`, e.message);
         if (attempt < retryDelays.length - 1) continue;
-        setMessages(prev => [...prev, { role: 'aya', text: 'Unable to reach AYA after 3 attempts. The server may be overloaded — please try again shortly.', time: new Date(), error: true }]);
+        setMessages(prev => [...prev, { role: 'aya', text: 'Unable to reach AAA after 3 attempts. The server may be overloaded — please try again shortly.', time: new Date(), error: true }]);
         break;
       }
     }
@@ -94,6 +94,82 @@ export default function AyaChat({ onClose }) {
     });
   };
 
+  // Export helpers
+  const exportResponse = (text, format) => {
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const title = `AAA-response-${timestamp}`;
+    let content, mimeType, ext;
+
+    switch (format) {
+      case 'txt':
+        content = text;
+        mimeType = 'text/plain';
+        ext = 'txt';
+        break;
+      case 'md':
+        content = `# AAA Response\n\n_Generated ${new Date().toLocaleString()}_\n\n---\n\n${text}`;
+        mimeType = 'text/markdown';
+        ext = 'md';
+        break;
+      case 'html':
+        content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.7;color:#222}h1{color:#0047AB;border-bottom:2px solid #0047AB;padding-bottom:8px}pre,code{background:#f4f4f4;padding:2px 6px;border-radius:3px;font-size:14px}.meta{color:#888;font-size:12px;margin-bottom:20px}</style></head><body><h1>AAA Response</h1><div class="meta">Generated ${new Date().toLocaleString()}</div><div>${text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')}</div></body></html>`;
+        mimeType = 'text/html';
+        ext = 'html';
+        break;
+      case 'pdf': {
+        // Generate a printable HTML and trigger print-to-PDF
+        const printWin = window.open('', '_blank');
+        printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:700px;margin:30px auto;padding:20px;line-height:1.7;color:#222;font-size:13px}h1{color:#0047AB;font-size:18px;border-bottom:2px solid #0047AB;padding-bottom:6px}pre,code{background:#f4f4f4;padding:2px 6px;border-radius:3px}.meta{color:#888;font-size:11px;margin-bottom:16px}@media print{body{margin:0;padding:15px}}</style></head><body><h1>AAA Response</h1><div class="meta">Generated ${new Date().toLocaleString()}</div><div>${text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')}</div></body></html>`);
+        printWin.document.close();
+        setTimeout(() => printWin.print(), 500);
+        return;
+      }
+      case 'docx': {
+        // Create a simple DOCX-compatible HTML blob that Word can open
+        const docHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:'Calibri',sans-serif;font-size:11pt;line-height:1.6}h1{color:#0047AB;font-size:16pt;border-bottom:1pt solid #0047AB;padding-bottom:4pt}</style></head><body><h1>AAA Response</h1><p style="color:gray;font-size:9pt">Generated ${new Date().toLocaleString()}</p><hr/>${text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')}</body></html>`;
+        content = docHtml;
+        mimeType = 'application/vnd.ms-word';
+        ext = 'doc';
+        break;
+      }
+      default: return;
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const ExportBar = ({ text }) => {
+    const formats = [
+      { label: 'PDF', fmt: 'pdf' },
+      { label: 'DOCX', fmt: 'docx' },
+      { label: 'MD', fmt: 'md' },
+      { label: 'HTML', fmt: 'html' },
+      { label: 'TXT', fmt: 'txt' },
+    ];
+    return (
+      <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
+        {formats.map(f => (
+          <button key={f.fmt} onClick={() => exportResponse(text, f.fmt)} style={{
+            fontFamily: pf, fontSize: '6px', padding: '3px 8px', border: '1px solid #1A4B63',
+            background: '#0A1628', color: '#2EC4F3', borderRadius: '3px', cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseOver={e => { e.target.style.background = '#144B63'; e.target.style.borderColor = '#2EC4F3'; }}
+          onMouseOut={e => { e.target.style.background = '#0A1628'; e.target.style.borderColor = '#1A4B63'; }}
+          >{f.label}</button>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -113,7 +189,7 @@ export default function AyaChat({ onClose }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>💬</span>
             <div>
-              <div style={{ fontSize: '12px', color: '#2EC4F3', letterSpacing: '2px' }}>AYA</div>
+              <div style={{ fontSize: '12px', color: '#2EC4F3', letterSpacing: '2px' }}>AAA</div>
               <div style={{ fontSize: '7px', color: '#666', marginTop: '2px' }}>Ask Ayima Anything</div>
             </div>
           </div>
@@ -171,10 +247,11 @@ export default function AyaChat({ onClose }) {
                 {msg.role === 'user' ? msg.text : renderText(msg.text)}
               </div>
               <div style={{ fontSize: '6px', color: '#444', marginTop: '3px', fontFamily: pf }}>
-                {msg.role === 'user' ? 'You' : 'AYA'}
+                {msg.role === 'user' ? 'You' : 'AAA'}
                 {' · '}
                 {msg.time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </div>
+              {msg.role === 'aya' && !msg.error && !msg.retrying && <ExportBar text={msg.text} />}
             </div>
           ))}
 
