@@ -2931,6 +2931,11 @@ body {
   100% { transform: rotate(360deg); }
 }
 
+@keyframes agentSunRay {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .aaa-button:hover {
   border-color: transparent;
   transform: translateY(-1px);

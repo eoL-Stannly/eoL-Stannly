@@ -79,23 +79,36 @@ function AgentCard({ agent, isSelected, onClick }) {
 
   return (
     <div onClick={onClick} style={{
-      background: isActive ? cfg.bg : '#0C1526',
-      border: `1.5px solid ${isSelected ? '#2EC4F3' : isActive ? `${cfg.color}44` : '#1A2A3A'}`,
-      borderRadius: '10px',
-      padding: '12px',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
       position: 'relative',
-      overflow: 'hidden',
-      height: '170px',
-      display: 'flex',
-      flexDirection: 'column',
+      borderRadius: '12px',
+      padding: isWorking ? '2px' : '0',
+      background: isWorking ? 'none' : 'transparent',
+      overflow: 'visible',
+      cursor: 'pointer',
     }}>
-      {isWorking && <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-        background: `radial-gradient(ellipse at 20% 30%, ${cfg.color}12 0%, transparent 70%)`,
-        animation: 'cardGlow 3s ease-in-out infinite', pointerEvents: 'none',
-      }} />}
+      {/* Sun-ray glow border for working agents */}
+      {isWorking && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          borderRadius: '12px',
+          background: `conic-gradient(from 0deg, transparent 0%, transparent 55%, ${cfg.color}AA 72%, ${cfg.color} 78%, ${cfg.color}AA 84%, transparent 100%)`,
+          animation: 'agentSunRay 3s linear infinite',
+          zIndex: 0,
+        }} />
+      )}
+      <div style={{
+        background: isActive ? cfg.bg : '#0C1526',
+        border: isWorking ? 'none' : `1.5px solid ${isSelected ? '#2EC4F3' : isActive ? `${cfg.color}44` : '#1A2A3A'}`,
+        borderRadius: '10px',
+        padding: '12px',
+        transition: 'all 0.3s ease',
+        position: 'relative',
+        overflow: 'hidden',
+        height: '170px',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 1,
+      }}>
 
       {/* Avatar + Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative', zIndex: 1 }}>
@@ -158,6 +171,7 @@ function AgentCard({ agent, isSelected, onClick }) {
             {agent.speechBubble}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
