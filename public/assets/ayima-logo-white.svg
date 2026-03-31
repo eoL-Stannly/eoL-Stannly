@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80">
+  <defs>
+    <style>
+      .logo-text { font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif; font-weight: 900; font-size: 68px; letter-spacing: 12px; }
+    </style>
+  </defs>
+  <text x="10" y="62" class="logo-text" fill="#FFFFFF">AYIMA</text>
+</svg>

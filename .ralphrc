@@ -1,0 +1,30 @@
+# =============================================================================
+# Ralph Wiggum Configuration - LLM Agents Office
+# =============================================================================
+
+PROJECT_NAME="llm-agents-office"
+PROJECT_TYPE="javascript"
+
+# Rate limiting
+MAX_CALLS_PER_HOUR=100
+
+# Timeouts
+CLAUDE_TIMEOUT_MINUTES=15
+SLEEP_BETWEEN_LOOPS=5
+
+# Session management
+SESSION_CONTINUITY=true
+SESSION_EXPIRY_HOURS=24
+
+# Claude tool permissions
+ALLOWED_TOOLS="Write,Read,Edit,Bash(git *),Bash(npm *),Bash(node *),Glob,Grep"
+
+# Circuit breaker thresholds
+CB_NO_PROGRESS_THRESHOLD=3
+CB_SAME_ERROR_THRESHOLD=5
+
+# Safety breaker (consecutive completion signals)
+SAFETY_BREAKER_THRESHOLD=5
+
+# Output format
+CLAUDE_OUTPUT_FORMAT="json"

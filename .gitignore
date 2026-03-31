@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.ralph/status.json
+.ralph/progress.json
+.ralph/.claude_session_id
+.ralph/cb_history.log
+*.log
+.env
+.DS_Store
