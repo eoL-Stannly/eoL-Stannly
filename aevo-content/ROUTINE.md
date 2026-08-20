@@ -88,3 +88,14 @@ old number as current. Work from what is already in the pages, label anything yo
 re-verify with its original as-of date, and list the unverified facts in the CHANGELOG entry so a
 later run can confirm them. Market pages are the ones most exposed to this — a market page built
 without access to live specs should say plainly which of its numbers are unverified.
+
+## Checking network access before you start
+
+Run `aevo-content/check-egress.sh` at the start of any pass that needs live figures. It reports
+which Aevo hosts this environment can reach and exits non-zero if any are blocked.
+
+A blocked host is an egress-policy denial. Do not retry it, do not attempt to route around it, and
+do not substitute a third-party mirror of Aevo's own content to get the same numbers — that
+defeats the policy just as surely. Report it in your final message and in the CHANGELOG entry, and
+fall back to the labelling rule above. Only the environment owner can open a host, in the
+environment's settings; `ROUTINE-PROMPT.md` has the details.

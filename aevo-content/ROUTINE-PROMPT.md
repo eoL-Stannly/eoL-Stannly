@@ -76,7 +76,7 @@ Two pages built properly and two improved properly beats twenty skimmed. If a ru
 
 KEEP THE SET COHERENT. Conventions live in `README.md` — question-led headings, bold lede, TL;DR bullets, comparison tables, related reading, Trade on Aevo CTA last. Per-page keyword targets live in `SITEMAP.md`; check coverage against them, do not keyword-stuff to hit them, and never let two pages chase the same primary keyword. Never silently drop a section a previous pass added — if you remove something, say so in the CHANGELOG and why.
 
-FACTS AND STALENESS. Any figure that can go stale — APRs, margin percentages, fee tiers, size caps, funding rates, contract specs, market-share splits — must name its source and its as-of date, or point the reader at the live source. `aevo.xyz` and its subdomains may be blocked by this environment's network egress policy. If a fetch to aevo.xyz, docs.aevo.xyz or api.aevo.xyz fails, do NOT guess and do NOT restate an old number as current: work from what is already in the pages, label anything you could not re-verify with its original as-of date, and list the unverified facts in the CHANGELOG entry so a later run can confirm them. Market pages are the most exposed to this — a market page built without access to live contract specs must say plainly which of its numbers are unverified rather than inventing plausible ones.
+FACTS AND STALENESS. Any figure that can go stale — APRs, margin percentages, fee tiers, size caps, funding rates, contract specs, market-share splits — must name its source and its as-of date, or point the reader at the live source. Run `aevo-content/check-egress.sh` before any pass that needs live figures — it reports which Aevo hosts this environment can reach and exits non-zero if any are blocked. As of 2026-08-20 all six are blocked by the account's egress policy. A blocked host is a policy denial: do not retry it, do not attempt to route around it, and do not substitute a third-party mirror of Aevo's content to get the same numbers. If a fetch to aevo.xyz, docs.aevo.xyz, app.aevo.xyz, api-docs.aevo.xyz, otc.aevo.xyz or api.aevo.xyz fails, do NOT guess and do NOT restate an old number as current: work from what is already in the pages, label anything you could not re-verify with its original as-of date, and list the unverified facts in the CHANGELOG entry so a later run can confirm them. Market pages are the most exposed to this — a market page built without access to live contract specs must say plainly which of its numbers are unverified rather than inventing plausible ones.
 
 GOOGLE DOCS. The delivered artefacts are Google Docs; the markdown is the source of truth. If the Google Drive connector is available, update the doc for each page you changed so it matches, create docs for new pages and add their rows to the delivery table in `README.md`. Archive prior versions by retitling with a `[vN ARCHIVED <date>]` prefix, never by deleting. If Drive is unavailable this run, skip it and say so in your final message.
 
@@ -84,13 +84,44 @@ FINALLY, report which pages you built, which you improved, the substance of each
 
 ---
 
-## Network egress
+## Network egress — action required by the environment owner
 
-`aevo.xyz`, `api.aevo.xyz` and `docs.aevo.xyz` are unreachable from the runtime environment — all
-three return no response. Add `aevo.xyz` and `*.aevo.xyz` to the allowed domains for the `Default`
-environment (`env_013zbPQSPHyeZcRrq8EX8sBx`) at claude.ai/code → Environments.
+Every Aevo host is currently blocked. Verified 2026-08-20 by `./check-egress.sh`:
 
-This now matters more than it did. The market pages (BTC, ETH, SOL, PUMP) are mostly contract
-specs, funding behaviour and liquidity — facts that have to be read from the live site. Until
-egress is open, those four pages will be built with their key numbers marked unverified. Consider
-opening egress before the routine works down to the markets column.
+| Host | Status | Why the content needs it |
+| ---- | ------ | ------------------------ |
+| `aevo.xyz` | blocked | apex, positioning and product copy |
+| `docs.aevo.xyz` | blocked | contract specs, margin rules, staking mechanics — cited 10x |
+| `app.aevo.xyz` | blocked | live markets, leaderboard, staking page — cited 11x |
+| `api-docs.aevo.xyz` | blocked | API reference and `llms.txt` — cited 4x |
+| `otc.aevo.xyz` | blocked | OTC desk — cited 5x |
+| `api.aevo.xyz` | blocked | live funding rates and contract parameters |
+
+The block is an account-level egress policy, not a container setting. Both the shell
+(`403 to CONNECT (policy denial)` from the agent proxy) and the WebFetch tool
+(`EGRESS_BLOCKED`) are refused at the same layer, so there is no alternate path and none should
+be sought — the proxy documentation is explicit that policy denials are reported, not routed
+around. It cannot be changed through the API: there is no environment-mutation tool, and
+`list_environments` is read-only.
+
+**Fix, which only the environment owner can apply:** claude.ai/code -> Environments -> `Default`
+(`env_013zbPQSPHyeZcRrq8EX8sBx`) -> allowed domains. Add:
+
+    aevo.xyz
+    *.aevo.xyz
+
+If the field takes only exact hostnames rather than wildcards, add all six from the table above.
+
+Re-check afterwards by running `aevo-content/check-egress.sh` in any session on that environment.
+It exits 0 when every host is reachable.
+
+### Why this is worth doing before the markets column
+
+The four market pages (BTC, ETH, SOL, PUMP) are mostly contract specs, funding behaviour and
+liquidity — facts that must be read from the live site. Built while blocked, they will carry their
+key numbers marked unverified. The Core products and Learn columns are far less exposed and can
+proceed meanwhile.
+
+It also affects what is already written: the staking page's APR figures are April/May 2026 and
+cannot be refreshed until egress opens, which is why the v2 pass could only relabel them as
+historical.

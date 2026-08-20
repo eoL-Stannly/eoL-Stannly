@@ -2,6 +2,22 @@
 
 One entry per routine run, newest first.
 
+## 2026-08-20 (third pass) — egress diagnosis, no page content changes
+
+- Added `check-egress.sh`: reports which Aevo hosts this environment can reach, exits non-zero if
+  any are blocked. Run it before any pass needing live figures.
+- Confirmed all six Aevo hosts are blocked — `aevo.xyz`, `app.aevo.xyz`, `docs.aevo.xyz`,
+  `api-docs.aevo.xyz`, `api.aevo.xyz`, `otc.aevo.xyz`. The agent proxy reports
+  `403 to CONNECT (policy denial)` and the WebFetch tool reports `EGRESS_BLOCKED`, so the block is
+  an account-level policy enforced above the container, with no alternate path. It cannot be
+  changed through the API; only the environment owner can open the hosts, in the environment's
+  settings. `ROUTINE-PROMPT.md` carries the host table and the exact fix.
+- `ROUTINE.md` and the routine prompt now tell each run to check egress first, and state plainly
+  that a policy denial is reported rather than worked around — including not substituting a
+  third-party mirror of Aevo's own content.
+
+Nothing in this pass changed a word of page copy.
+
 ## 2026-08-20 (later) — site architecture added, no page content changes
 
 Second housekeeping pass, made by hand. Expands the brief from five articles to the full site IA.
