@@ -2,6 +2,33 @@
 
 One entry per routine run, newest first.
 
+## 2026-08-20 (later) — site architecture added, no page content changes
+
+Second housekeeping pass, made by hand. Expands the brief from five articles to the full site IA.
+
+- Added `SITEMAP.md`: the page inventory and internal link map, taken from the agreed site
+  architecture — a homepage over three hub columns (Core products, Markets, Learn) converging on a
+  single Trade on Aevo CTA, plus standalone guides. 21 pages total; 5 exist, 16 are `todo`.
+  Each row carries the page's path, search intent, target keywords and outbound links.
+- Reorganised `articles/` into `pages/`, mirroring the IA. Page content is byte-identical; only
+  paths changed. Related-reading blocks use plain titles rather than relative paths, so nothing
+  broke:
+  - `03-aevo-otc-desk.md` -> `pages/core-products/otc-trading.md`
+  - `04-aevo-trading-strategies.md` -> `pages/core-products/automated-strategies.md`
+  - `01-pre-launch-token-futures.md` -> `pages/guides/pre-launch-token-futures.md`
+  - `02-aevo-mcp.md` -> `pages/guides/aevo-mcp.md`
+  - `05-aevo-staking.md` -> `pages/guides/staking.md`
+- Rewrote `ROUTINE.md`: the loop is now build-and-improve, both every run — take the next one or
+  two `todo` pages, plus one or two `live` pages to improve, and wire the internal links each time.
+- Recorded the intent split between `core-products/` and `learn/` in `SITEMAP.md`. Both columns
+  cover perpetual futures, options and hedging; written as duplicates they would cannibalise each
+  other, so core products is commercial intent and learn is venue-neutral education, with the
+  keyword sets split accordingly.
+- Updated `ROUTINE-PROMPT.md` with the sitemap-driven prompt and a daily-morning schedule
+  (`0 5 * * *`), superseding the every-6-hours draft.
+
+Nothing in this pass changed a word of page copy.
+
 ## 2026-08-20 — restructure, no content changes
 
 Housekeeping pass, made by hand rather than by the routine.

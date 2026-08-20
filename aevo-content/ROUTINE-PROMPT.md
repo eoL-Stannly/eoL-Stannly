@@ -2,40 +2,48 @@
 
 The **Aevo Content Writing** routine (`trig_016NcLmYSb3jRn16xSCSzpJf`) was created through the
 claude.ai web UI, so it can only be edited there — the API refuses agent edits to UI-created
-routines. This file holds the settings to apply, so they are version-controlled rather than
-living only in a chat log.
+routines. This file holds the settings to apply, so they are version-controlled rather than living
+only in a chat log.
 
 Apply at **claude.ai/code → Routines → Aevo Content Writing**.
 
 ## Schedule
 
-    0 */6 * * *
+    0 5 * * *
 
-Every 6 hours. The old value was `0 5 * * *` (once daily), which contradicted the prompt's own
-"every 6 hours".
+Daily at 05:00 **UTC** — cron here is always evaluated in UTC. That is the routine's original
+schedule, kept because "each morning" matches it: 06:00 UK, 07:00 CET. If your morning is somewhere
+else, shift the hour field — e.g. `0 12 * * *` for 05:00 US Pacific.
+
+An earlier draft of this file proposed `0 */6 * * *` (every 6 hours), matching the old prompt's
+stated intent. That is superseded: the brief is now one build-and-improve pass each morning.
 
 ## Source repository / branch
 
 The routine's source is `eoL-Stannly/eoL-Stannly` with outcome branch `claude/relaxed-ritchie`,
 which is why every run landed on a fresh `claude/relaxed-ritchie-<suffix>` branch. Set the outcome
 branch to `aevo-content` if the UI allows it. The prompt below also pins the branch explicitly, so
-it holds even if the outcome-branch field cannot be changed.
+it holds even if that field cannot be changed.
 
 Moving the content to a dedicated repository is still worth doing, but repository creation is not
-available to this integration — it has to be done by hand, and then the routine's source repo
-repointed in the same settings screen.
+available to this integration — it has to be done by hand, and the routine's source repo repointed
+in the same settings screen.
 
 ## Prompt
 
-Replace the entire prompt with the text below. The old prompt's opening block was a one-off
-keyword audit of the perps / hedging / options pages, marked "DON'T DO THESE EACH TIME" but left in
-a recurring prompt; it has been dropped. The keyword lists it referenced now live in `README.md`.
+Replace the entire prompt with the text below.
 
 ---
 
-You maintain the Aevo core-page articles in the repo eoL-Stannly/eoL-Stannly, under the `aevo-content/` directory, on the long-lived branch `aevo-content`.
+You maintain the Aevo site content in the repo eoL-Stannly/eoL-Stannly, under the `aevo-content/` directory, on the long-lived branch `aevo-content`. Each morning you build the next pages of the site and improve the ones already written.
 
-FIRST, before anything else: read `aevo-content/ROUTINE.md`. It is the working agreement between runs and it is authoritative — where it contradicts this prompt, follow it. Then read `aevo-content/README.md`, `aevo-content/CHANGELOG.md`, every file in `aevo-content/articles/`, and `git log --oneline -15 -- aevo-content/`. Do not write a word until you have read what previous runs produced.
+FIRST, before anything else, read these four files in order:
+- `aevo-content/ROUTINE.md` — the working agreement between runs. It is authoritative; where it contradicts this prompt, follow it.
+- `aevo-content/SITEMAP.md` — the page inventory and internal link map. This is your work queue: every page, its path, its search intent, its target keywords, and what it links to. A page is `todo` until its file exists, then `live`.
+- `aevo-content/README.md` — conventions, keyword universe, Google Doc delivery index.
+- `aevo-content/CHANGELOG.md` — what previous runs did.
+
+Then read the pages under `aevo-content/pages/` that you intend to touch, and `git log --oneline -15 -- aevo-content/`. Do not write a word until you have read what previous runs produced.
 
 BRANCH DISCIPLINE — this matters more than anything else here. You have no memory between runs; the branch is the only state you carry forward, so it must be the same branch every time:
 
@@ -46,34 +54,43 @@ BRANCH DISCIPLINE — this matters more than anything else here. You have no mem
 
 Do not accept a session-generated branch name. Do not create a `claude/*` branch. Do not open a pull request. Never push to `main` — `main` is the GitHub profile README and must stay untouched.
 
-THE ARTICLE SET is five fixed files in `aevo-content/articles/`:
-1. `01-pre-launch-token-futures.md` — pre-launch token futures
-2. `02-aevo-mcp.md` — the Aevo MCP
-3. `03-aevo-otc-desk.md` — Aevo's OTC desk
-4. `04-aevo-trading-strategies.md` — Aevo trading strategies
-5. `05-aevo-staking.md` — Aevo staking, including the lottery and all forms of staking
+THE SITE is a homepage over three hub columns, all converging on a single "Trade on Aevo" call to action, plus standalone guides:
 
-EACH RUN:
-1. If a listed article has no file, write it, matching the design and tone of the existing ones and of the earlier perps / hedging / options pillar pages.
-2. Otherwise improve the articles that are weakest or most stale. The CHANGELOG says what the last pass touched — pick up where it left off instead of re-polishing the same article every run. One or two articles improved properly beats five skimmed.
-3. Edit the files in `articles/` IN PLACE. Never create `v2/`, `v3/`, `-new`, `-final`, or a dated copy of an article. Git history is the version history; that is the whole point of the fixed branch.
-4. Prepend a dated entry to `aevo-content/CHANGELOG.md` naming which articles changed and what changed in each — accuracy fixes, new sections, keyword coverage. Be specific; "improved article 3" is useless to the next run.
-5. Commit with a message summarising the pass, and push to `aevo-content`.
+- **Core products** — perpetual futures, options, options hedging, OTC trading, automated strategies, unified margin
+- **Markets** — BTC, ETH, PUMP, SOL, and a "view all markets" index
+- **Learn** — perpetual futures, options trading, leverage and margin, hedging, DEX education, fees and risk
 
-KEEP THE SET COHERENT. Conventions and target-keyword lists live in `README.md` — question-led headings, bold lede, TL;DR bullets, comparison tables, a related-reading block cross-linking the set. Check keyword coverage against those lists; do not keyword-stuff to hit them. Never silently drop a section a previous pass added — if you remove something, say so in the CHANGELOG and why.
+`SITEMAP.md` has the authoritative list with paths, keywords and links. Before writing, read its "intent split" section: core-product and learn pages cover overlapping subjects on purpose, at different intents — core products is commercial ("what does Aevo offer, why trade here"), learn is venue-neutral education ("what is this instrument, how does it work"). Written as duplicates they cannibalise each other. If a product page starts explaining what a perpetual future *is* from scratch, that belongs in learn and should be linked, not repeated.
 
-FACTS AND STALENESS. Any figure that can go stale (APRs, margin percentages, fee tiers, size caps, market-share splits) must name its source and its as-of date, or point the reader at the live source. `aevo.xyz` and its subdomains may be blocked by this environment's network egress policy. If a fetch to aevo.xyz, docs.aevo.xyz or api.aevo.xyz fails, do NOT guess and do NOT restate an old number as current: work from what is already in the articles, label anything you could not re-verify with its original as-of date, and list the unverified facts in the CHANGELOG entry so a later run can confirm them.
+EACH RUN — build and improve, both:
 
-GOOGLE DOCS. The delivered artefacts are Google Docs; the markdown is the source of truth. If the Google Drive connector is available, update the doc for each article you changed so it matches, and keep the doc links in `README.md` current. Archive prior versions by retitling them, never by deleting. If Drive is unavailable this run, skip it and say so in your final message.
+1. BUILD: take the next one or two `todo` pages from `SITEMAP.md`. Work down the file in order — core products, then markets, then learn — so the columns fill out evenly rather than one racing ahead. Match the design and tone of the pages already written.
+2. IMPROVE: take one or two `live` pages. The CHANGELOG says what the last pass touched — pick up where it left off rather than re-polishing the same page every morning. Prefer pages that are stale, thin, or whose internal links are now broken because a page they should point at has since been written.
+3. WIRE THE LINKS: every page you touch must satisfy the linking rules in `SITEMAP.md` — the Trade on Aevo CTA as its last block, a link to its counterpart in the other column, hub links up and down. When you create a page, also add inbound links to it from the pages `SITEMAP.md` says should point at it. A new page nothing links to is invisible.
+4. EDIT IN PLACE. Never create `v2/`, `v3/`, `-new`, `-final`, or a dated copy of a page. Git history is the version history; that is the whole point of the fixed branch.
+5. UPDATE `SITEMAP.md` in the same commit — flip any page you created from `todo` to `live`.
+6. RECORD IT: prepend a dated entry to `CHANGELOG.md` naming which pages you built and which you improved, and what changed in each. Be specific; "improved the options page" is useless to the next run.
+7. COMMIT AND PUSH to `aevo-content`.
 
-FINALLY, report which articles you changed, the substance of each change, anything you could not verify, and the commit you pushed.
+Two pages built properly and two improved properly beats twenty skimmed. If a run can only do one thing well, do one thing well and say so.
+
+KEEP THE SET COHERENT. Conventions live in `README.md` — question-led headings, bold lede, TL;DR bullets, comparison tables, related reading, Trade on Aevo CTA last. Per-page keyword targets live in `SITEMAP.md`; check coverage against them, do not keyword-stuff to hit them, and never let two pages chase the same primary keyword. Never silently drop a section a previous pass added — if you remove something, say so in the CHANGELOG and why.
+
+FACTS AND STALENESS. Any figure that can go stale — APRs, margin percentages, fee tiers, size caps, funding rates, contract specs, market-share splits — must name its source and its as-of date, or point the reader at the live source. `aevo.xyz` and its subdomains may be blocked by this environment's network egress policy. If a fetch to aevo.xyz, docs.aevo.xyz or api.aevo.xyz fails, do NOT guess and do NOT restate an old number as current: work from what is already in the pages, label anything you could not re-verify with its original as-of date, and list the unverified facts in the CHANGELOG entry so a later run can confirm them. Market pages are the most exposed to this — a market page built without access to live contract specs must say plainly which of its numbers are unverified rather than inventing plausible ones.
+
+GOOGLE DOCS. The delivered artefacts are Google Docs; the markdown is the source of truth. If the Google Drive connector is available, update the doc for each page you changed so it matches, create docs for new pages and add their rows to the delivery table in `README.md`. Archive prior versions by retitling with a `[vN ARCHIVED <date>]` prefix, never by deleting. If Drive is unavailable this run, skip it and say so in your final message.
+
+FINALLY, report which pages you built, which you improved, the substance of each change, anything you could not verify, and the commit you pushed.
 
 ---
 
 ## Network egress
 
-`aevo.xyz`, `api.aevo.xyz` and `docs.aevo.xyz` are currently unreachable from the runtime
-environment — all three return no response. Add `aevo.xyz` and `*.aevo.xyz` to the allowed domains
-for the `Default` environment (`env_013zbPQSPHyeZcRrq8EX8sBx`) at claude.ai/code → Environments.
-Until that is done, runs cannot verify any live Aevo figure, which is why the prompt above tells
-them to label unverified facts rather than restate them as current.
+`aevo.xyz`, `api.aevo.xyz` and `docs.aevo.xyz` are unreachable from the runtime environment — all
+three return no response. Add `aevo.xyz` and `*.aevo.xyz` to the allowed domains for the `Default`
+environment (`env_013zbPQSPHyeZcRrq8EX8sBx`) at claude.ai/code → Environments.
+
+This now matters more than it did. The market pages (BTC, ETH, SOL, PUMP) are mostly contract
+specs, funding behaviour and liquidity — facts that have to be read from the live site. Until
+egress is open, those four pages will be built with their key numbers marked unverified. Consider
+opening egress before the routine works down to the markets column.
