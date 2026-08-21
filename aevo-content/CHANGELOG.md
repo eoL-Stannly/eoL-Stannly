@@ -12,6 +12,14 @@ One entry per routine run, newest first.
   an account-level policy enforced above the container, with no alternate path. It cannot be
   changed through the API; only the environment owner can open the hosts, in the environment's
   settings. `ROUTINE-PROMPT.md` carries the host table and the exact fix.
+- Established the exact fix from Anthropic's cloud-environments documentation: the `Default`
+  environment is on the **Trusted** network access level, whose allowlist covers package
+  registries, GitHub and cloud SDKs only. Unblocking Aevo means switching it to **Custom** with
+  `aevo.xyz` and `*.aevo.xyz` in Allowed domains and "Also include default list of common package
+  managers" ticked, or to **Full**. Documented in `ROUTINE-PROMPT.md` with the level table.
+- Confirmed there is no configuration-file route: per the documentation, each environment owns its
+  allowlist and no server-managed setting can add domains to it, so nothing committed to this repo
+  can change it.
 - `ROUTINE.md` and the routine prompt now tell each run to check egress first, and state plainly
   that a policy denial is reported rather than worked around — including not substituting a
   third-party mirror of Aevo's own content.

@@ -104,16 +104,41 @@ be sought — the proxy documentation is explicit that policy denials are report
 around. It cannot be changed through the API: there is no environment-mutation tool, and
 `list_environments` is read-only.
 
-**Fix, which only the environment owner can apply:** claude.ai/code -> Environments -> `Default`
-(`env_013zbPQSPHyeZcRrq8EX8sBx`) -> allowed domains. Add:
+**Fix, which only the environment owner can apply.** The `Default` environment
+(`env_013zbPQSPHyeZcRrq8EX8sBx`) is on the **Trusted** access level, which allows only Anthropic's
+default list — package registries, GitHub, cloud SDKs. Aevo is not on it.
+
+The **Network access** field takes one of four levels:
+
+| Level | Outbound connections |
+| ----- | -------------------- |
+| None | no outbound access through the session's network |
+| Trusted | allowlisted defaults only: package registries, GitHub, cloud SDKs — **current setting** |
+| Full | any domain |
+| Custom | your own allowlist, optionally including the defaults |
+
+Recommended: **Custom**, not Full. In the environment dialog select **Custom**, then in the
+**Allowed domains** field put one domain per line:
 
     aevo.xyz
     *.aevo.xyz
 
-If the field takes only exact hostnames rather than wildcards, add all six from the table above.
+A leading `*.` matches every subdomain, so those two lines cover all six hosts in the table above.
 
-Re-check afterwards by running `aevo-content/check-egress.sh` in any session on that environment.
-It exits 0 when every host is reachable.
+Then tick **"Also include default list of common package managers"** — without it the environment
+allows *only* what is listed, which would break npm, pip and the rest. GitHub traffic uses a
+separate proxy and is unaffected either way.
+
+Full ("any domain") also works and is what "allow any site" literally asks for. Custom is the
+better fit here because this routine runs unattended and fetches web content: a scoped allowlist
+means a page it retrieves cannot pull it toward an arbitrary host. The choice is the owner's; both
+unblock the routine.
+
+There is no configuration-file route to this. Per Anthropic's documentation: *"Each environment has
+its own allowed-domains list; there's no organization-level allowlist that admins can push to every
+member's environments. Server-managed settings still apply inside cloud sessions, but none of them
+adds domains to the environment's network allowlist."* Nothing committed to this repo can change
+it, which is why this file documents the change rather than making it.
 
 ### Why this is worth doing before the markets column
 
