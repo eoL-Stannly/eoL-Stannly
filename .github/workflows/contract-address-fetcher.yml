@@ -38,10 +38,20 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install dependencies
+        run: pip install --quiet requests
+
       - name: Poll for the contract address
         env:
           TARGET_URL: ${{ inputs.target_url }}
+          # Every notification channel below is optional -- configure any
+          # subset as repository secrets; all configured ones fire in
+          # parallel the instant a CA is confirmed.
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_MENTION: ${{ secrets.DISCORD_MENTION }}
         run: python scripts/fetch_contract_address.py
 
       - name: Commit state if it changed
