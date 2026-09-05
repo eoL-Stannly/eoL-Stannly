@@ -1,0 +1,73 @@
+name: Contract Address Fetcher
+
+# GitHub Actions cannot trigger a scheduled workflow more often than every
+# five minutes, so the cron below is only what (re)starts the job -- the
+# actual polling frequency comes from the internal loop in
+# scripts/fetch_contract_address.py, which re-checks the page roughly every
+# 20 seconds for the ~4.5 minutes until the next trigger takes over. Net
+# effect: continuous polling at ~20s intervals, not a check every 5 minutes.
+#
+# NOTE: GitHub only fires `schedule` triggers from the repository's default
+# branch. Merge this workflow to the default branch for the schedule to run;
+# `workflow_dispatch` works from any branch in the meantime.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Override the URL to check"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: contract-address-fetcher
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install --quiet requests
+
+      - name: Poll for the contract address
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+          # Every notification channel below is optional -- configure any
+          # subset as repository secrets; all configured ones fire in
+          # parallel the instant a CA is confirmed.
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_MENTION: ${{ secrets.DISCORD_MENTION }}
+        run: python scripts/fetch_contract_address.py
+
+      - name: Commit state if it changed
+        run: |
+          if ! git diff --quiet -- data/contract-address.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/contract-address.json
+            git commit -m "Update contract address state"
+            for attempt in 1 2 3 4; do
+              if git push; then
+                break
+              fi
+              sleep $((attempt * attempt))
+              git pull --rebase
+            done
+          else
+            echo "No change to commit."
+          fi
