@@ -22,7 +22,7 @@ this keeps each poll as cheap as possible:
 * Conditional GETs -- the ETag / Last-Modified from the previous response are
   sent back as If-None-Match / If-Modified-Since. An unchanged page answers
   with a bodyless "304 Not Modified", which costs the origin almost nothing
-  and needs no parsing on our side. This is what makes a ~10s interval
+  and needs no parsing on our side. This is what makes a ~5s interval
   reasonable rather than abusive.
 * A keep-alive session, so polls reuse one TLS connection instead of
   re-handshaking every time.
@@ -253,80 +253,133 @@ def explorer_links(address: str) -> str:
     )
 
 
-def _notify_ntfy(address: str, headline: str) -> None:
+def _post_with_retry(description: str, attempts: int = 3, **kwargs):
+    """POST with retries -- this is the one message that matters, so a single
+    dropped packet or blip must not lose it."""
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            response = requests.post(timeout=REQUEST_TIMEOUT, **kwargs)
+            if response.status_code < 400:
+                return response
+            last_error = f"HTTP {response.status_code}: {response.text[:200]}"
+        except requests.RequestException as exc:
+            last_error = str(exc)
+        if attempt < attempts:
+            time.sleep(0.5 * attempt)
+    raise RuntimeError(f"{description} failed after {attempts} attempts: {last_error}")
+
+
+def _body_for(address: str | None, note: str) -> str:
+    if address:
+        return f"{address}\n\n{explorer_links(address)}"
+    return note
+
+
+def _notify_ntfy(title: str, address: str | None, note: str) -> bool:
     """ntfy.sh push -- typically the fastest route to a phone lock screen."""
     topic = os.environ.get("NTFY_TOPIC")
     if not topic:
-        return
+        return False
     server = os.environ.get("NTFY_SERVER", "https://ntfy.sh").rstrip("/")
     url = topic if topic.startswith("http") else f"{server}/{topic}"
-    requests.post(
-        url,
-        data=f"{address}\n\n{explorer_links(address)}".encode("utf-8"),
+    _post_with_retry(
+        "ntfy",
+        url=url,
+        data=_body_for(address, note).encode("utf-8"),
         headers={
-            "Title": headline,
+            "Title": title,
             "Priority": "urgent",
             "Tags": "rotating_light",
             "Click": TARGET_URL,
         },
-        timeout=REQUEST_TIMEOUT,
     )
+    return True
 
 
-def _notify_telegram(address: str, headline: str) -> None:
+def _notify_telegram(title: str, address: str | None, note: str) -> bool:
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     if not (token and chat_id):
-        return
-    text = f"*{headline}*\n\n`{address}`\n\n{explorer_links(address)}"
-    requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        json={
-            "chat_id": chat_id,
-            "text": text,
-            "parse_mode": "Markdown",
-            "disable_web_page_preview": True,
-        },
-        timeout=REQUEST_TIMEOUT,
-    )
+        return False
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    body = _body_for(address, note)
+    # Backticks render as tap-to-copy in Telegram, which is exactly what you
+    # want on a phone when the CA lands.
+    rich = f"*{title}*\n\n" + (f"`{address}`\n\n{explorer_links(address)}" if address else note)
+    try:
+        _post_with_retry(
+            "telegram",
+            url=url,
+            json={
+                "chat_id": chat_id,
+                "text": rich,
+                "parse_mode": "Markdown",
+                "disable_web_page_preview": True,
+            },
+        )
+    except RuntimeError as exc:
+        # A Markdown parse error returns 400 and drops the message entirely.
+        # Resend as plain text rather than lose the alert.
+        print(f"::warning::telegram markdown send failed ({exc}); retrying as plain text", file=sys.stderr)
+        _post_with_retry(
+            "telegram (plain)",
+            url=url,
+            json={
+                "chat_id": chat_id,
+                "text": f"{title}\n\n{body}",
+                "disable_web_page_preview": True,
+            },
+        )
+    return True
 
 
-def _notify_discord(address: str, headline: str) -> None:
+def _notify_discord(title: str, address: str | None, note: str) -> bool:
     webhook = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook:
-        return
+        return False
     # Optional mention (e.g. "<@1234567890>" or "@everyone") so it actually
     # pushes to your phone rather than sitting silently in the channel.
     mention = os.environ.get("DISCORD_MENTION", "")
-    content = (
-        f"{mention} **{headline}**\n"
-        f"```\n{address}\n```\n"
-        f"{explorer_links(address)}\n<{TARGET_URL}>"
-    ).strip()
-    requests.post(
-        webhook,
+    if address:
+        detail = f"```\n{address}\n```\n{explorer_links(address)}\n<{TARGET_URL}>"
+    else:
+        detail = note
+    content = f"{mention} **{title}**\n{detail}".strip()
+    _post_with_retry(
+        "discord",
+        url=webhook,
         json={"content": content, "allowed_mentions": {"parse": ["everyone", "users", "roles"]}},
-        timeout=REQUEST_TIMEOUT,
     )
+    return True
 
 
-def notify_all(address: str, headline: str) -> None:
-    """Fire every configured channel in parallel, so none blocks the others."""
+NOTIFIERS = (("ntfy", _notify_ntfy), ("telegram", _notify_telegram), ("discord", _notify_discord))
 
-    def run(fn) -> None:
+
+def notify_all(title: str, address: str | None = None, note: str = "") -> dict[str, str]:
+    """Fire every configured channel in parallel, so none blocks the others.
+
+    Returns {channel: "sent" | "not configured" | "FAILED: ..."} for logging.
+    """
+    results: dict[str, str] = {}
+
+    def run(name, fn) -> None:
         try:
-            fn(address, headline)
+            results[name] = "sent" if fn(title, address, note) else "not configured"
         except Exception as exc:  # never let a notifier failure lose the CA
-            print(f"::warning::{fn.__name__} failed: {exc}", file=sys.stderr)
+            results[name] = f"FAILED: {exc}"
+            print(f"::warning::{name} notification failed: {exc}", file=sys.stderr)
 
-    threads = [
-        threading.Thread(target=run, args=(fn,), daemon=True)
-        for fn in (_notify_ntfy, _notify_telegram, _notify_discord)
-    ]
+    threads = [threading.Thread(target=run, args=(n, f), daemon=True) for n, f in NOTIFIERS]
     for thread in threads:
         thread.start()
     for thread in threads:
-        thread.join(timeout=REQUEST_TIMEOUT + 2)
+        # Generous join: retries mean a slow channel can legitimately take a while.
+        thread.join(timeout=(REQUEST_TIMEOUT * 3) + 5)
+
+    print("Notification results: " + ", ".join(f"{k}={v}" for k, v in sorted(results.items())))
+    return results
 
 
 def write_summary(text: str) -> None:
@@ -383,7 +436,7 @@ def check_once(state: dict, poller: Poller) -> tuple[bool, bool, float | None]:
 
     if state.get("address"):
         if best and best != state["address"]:
-            notify_all(best, "Contract address CHANGED")
+            notify_all("Contract address CHANGED", best)
             state["address"] = best
             state["found_at"] = now
             save_state(state)
@@ -394,7 +447,7 @@ def check_once(state: dict, poller: Poller) -> tuple[bool, bool, float | None]:
 
     if best:
         # Notify FIRST -- state/commit work must never delay the alert.
-        notify_all(best, "CONTRACT ADDRESS IS LIVE")
+        notify_all("CONTRACT ADDRESS IS LIVE", best)
         print(f"\U0001f6a8 CA FOUND: {best}")
         state["address"] = best
         state["found_at"] = now
@@ -415,7 +468,43 @@ def check_once(state: dict, poller: Poller) -> tuple[bool, bool, float | None]:
     return False, True, None
 
 
+def run_test_notification() -> int:
+    """Send a test alert so the delivery path is proven before the launch.
+
+    Deliberately contains no address at all, real or fake -- a test message
+    carrying a plausible-looking 0x string is asking for someone to buy it.
+    """
+    results = notify_all(
+        "TEST — CA alerts are working",
+        note=(
+            "This is a test of your contract address alerts. No address yet.\n\n"
+            "The real alert will contain the contract address and explorer links."
+        ),
+    )
+    configured = [name for name, status in results.items() if status == "sent"]
+    failed = {name: status for name, status in results.items() if status.startswith("FAILED")}
+
+    if failed:
+        for name, status in failed.items():
+            write_summary(f"❌ **{name}**: {status}")
+        return 1
+    if not configured:
+        write_summary(
+            "⚠️ **No notification channel is configured** — a found CA would be "
+            "recorded but nobody would be told. Set `TELEGRAM_BOT_TOKEN` + "
+            "`TELEGRAM_CHAT_ID` (or `NTFY_TOPIC` / `DISCORD_WEBHOOK_URL`) as "
+            "repository secrets."
+        )
+        return 1
+
+    write_summary(f"✅ Test alert sent via: **{', '.join(sorted(configured))}**. Check your phone.")
+    return 0
+
+
 def main() -> int:
+    if os.environ.get("TEST_NOTIFY", "").lower() in ("1", "true", "yes"):
+        return run_test_notification()
+
     state = load_state()
     poller = Poller(TARGET_URL)
 

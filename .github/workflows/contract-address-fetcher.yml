@@ -4,8 +4,8 @@ name: Contract Address Fetcher
 # five minutes, so the cron below is only what (re)starts the job -- the
 # actual polling frequency comes from the internal loop in
 # scripts/fetch_contract_address.py, which re-checks the page roughly every
-# 20 seconds for the ~4.5 minutes until the next trigger takes over. Net
-# effect: continuous polling at ~20s intervals, not a check every 5 minutes.
+# 5 seconds for the ~4.5 minutes until the next trigger takes over. Net
+# effect: continuous polling at ~5s intervals, not a check every 5 minutes.
 #
 # NOTE: GitHub only fires `schedule` triggers from the repository's default
 # branch. Merge this workflow to the default branch for the schedule to run;
@@ -19,6 +19,11 @@ on:
         description: "Override the URL to check"
         required: false
         default: ""
+      test_notify:
+        description: "Send a TEST alert to verify notifications, then stop"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -44,6 +49,7 @@ jobs:
       - name: Poll for the contract address
         env:
           TARGET_URL: ${{ inputs.target_url }}
+          TEST_NOTIFY: ${{ inputs.test_notify }}
           # Every notification channel below is optional -- configure any
           # subset as repository secrets; all configured ones fire in
           # parallel the instant a CA is confirmed.
